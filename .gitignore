@@ -1,0 +1,26 @@
+# Compilación
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# Directorios de compilación
+build/
+bin/
+obj/
+
+# IDEs y Editores
+.vscode/
+.vs/
+*.swp
+*.swo
+.DS_Store
+
+# Archivos temporales
+*.log
+docx_content/
+
+# Archivos de salida del programa (si aplica)
+data/output/*
+!data/output/.gitkeep
