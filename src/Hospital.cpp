@@ -21,6 +21,9 @@ Hospital::Hospital( const std::string& codigoHospital,
     , ciudad(ciudad)
 {}
 
+Hospital::Hospital() {
+}
+
 std::string Hospital::getCodigoHospital()   const { return codigoHospital; }
 std::string Hospital::getNombre()           const { return nombre; }
 std::string Hospital::getCiudad()           const { return ciudad->getNombre(); }
