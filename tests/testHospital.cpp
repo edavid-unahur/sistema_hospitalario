@@ -1,6 +1,6 @@
-#include "Hospital.h"
-#include "Ciudad.h"
-#include "Especialidad.h"
+#include "../src/Hospital.h"
+#include "../src/Ciudad.h"
+#include "../src/Especialidad.h"
 
 int main() {
 

@@ -41,6 +41,23 @@ make clean
 
 El ejecutable se generará en la carpeta `bin/`.
 
+### Menú interactivo del TP
+
+El `main` actual muestra un menú de demostración centrado en los módulos ya trabajados del TP, sin incluir la parte de Gestión de Hospitales.
+
+Opciones disponibles:
+
+1. Demo de Pacientes y Turnos: crea datos de ejemplo en memoria y deja preparada la base del módulo de Integrante 2.
+2. Demo de Diagnósticos: recorre el AVL de diagnósticos con frecuencias acumuladas.
+3. Demo de Insumos: ejecuta Backtracking y Branch & Bound con trazas verbosas.
+4. Benchmark rápido: compara nodos explorados y tiempos para n = 10, 20 y 30.
+
+Ejecutar el binario y elegir una opción:
+
+```bash
+./bin/sistema_hospitalario
+```
+
 ## 👥 Equipo (Integrantes)
 
 Este proyecto es desarrollado por un equipo de 3 personas siguiendo un plan de trabajo equitativo:
