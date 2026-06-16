@@ -1,23 +1,82 @@
 #include <iostream>
-#include <string>
 #include "Turno.h"
 using namespace std;
 
-
+// Constructor
 Turno::Turno(
-    string codigoHospital, 
-    int turnoId, 
-    int pacienteId, 
-    int medicoId, 
-    int fechaTurno, 
-    string especialidad, 
-    int duracionMinutos
+    string codigoHosp, 
+    int turId, 
+    int pacId, 
+    int medId, 
+    int fechaTur, 
+    string espec, 
+    int duracion
 ){
-    this->codigoHospital = codigoHospital;
-    this->turnoId = turnoId;
-    this->pacienteId = pacienteId;
-    this->medicoId = medicoId;
-    this->fechaTurno = fechaTurno;
-    this->especialidad = especialidad;
-    this->duracionMinutos = duracionMinutos;
+    codigoHospital = codigoHosp;
+    turnoId = turId;
+    pacienteId = pacId;
+    medicoId = medId;
+    fechaTurno = fechaTur;
+    especialidad = espec;
+    duracionMinutos = duracion;
 }
+
+
+// Getters
+string Turno::getCodigoHospital() {
+    return codigoHospital;
+}
+
+int Turno::getTurnoId() {
+    return turnoId;
+}
+
+int Turno::getPacienteId() {
+    return pacienteId;
+}
+
+int Turno::getMedicoId() {
+    return medicoId;
+}
+
+int Turno::getFechaTurno() {
+    return fechaTurno;
+}
+
+string Turno::getEspecialidad() {
+    return especialidad;
+}
+
+int Turno::getDuracionMinutos() {
+    return duracionMinutos;
+}
+
+// Setters
+void Turno::setCodigoHospital(string codigoHospitalNuevo) {
+    codigoHospital = codigoHospitalNuevo;
+}
+
+void Turno::setTurnoId(int turnoIdNuevo) {
+    turnoId = turnoIdNuevo;
+}
+
+void Turno::setPacienteId(int pacienteIdNuevo) {
+    pacienteId = pacienteIdNuevo;
+}
+
+void Turno::setMedicoId(int medicoIdNuevo) {
+    medicoId = medicoIdNuevo;
+}
+
+void Turno::setFechaTurno(int fechaTurnoNuevo) {
+    fechaTurno = fechaTurnoNuevo;
+}
+
+void Turno::setEspecialidad(string especialidadNueva) {
+    especialidad = especialidadNueva;
+}
+
+void Turno::setDuracionMinutos(int duracionMinutosNueva) {
+    duracionMinutos = duracionMinutosNueva;
+}
+

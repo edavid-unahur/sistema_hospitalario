@@ -1,22 +1,79 @@
 #include <iostream>
-#include <string>
 #include "Paciente.h"
 using namespace std;
 
 Paciente::Paciente(
-    string codigoHospital,
-    int pacienteId,
-    int dni,
-    string fechaIngreso,
-    string diagnostico,
-    int prioridad,
-    float pesoKg
+    string codigoHosp,
+    int pacId,
+    int DNI,
+    int fechaIng,
+    string diag,
+    int prio,
+    float peso
 ){
-    this->codigoHospital = codigoHospital;
-    this->pacienteId = pacienteId;
-    this->dni = dni;
-    this->fechaIngreso = fechaIngreso;
-    this->diagnostico = diagnostico;
-    this->prioridad = prioridad;
-    this->pesoKg = pesoKg;
+    codigoHospital = codigoHosp;
+    pacienteId = pacId;
+    dni = DNI;
+    fechaIngreso = fechaIng;
+    diagnostico = diag;
+    prioridad = prio;
+    pesoKg = peso;
+}
+
+// Getters
+string Paciente::getCodigoHospital() {
+    return codigoHospital;
+}
+
+int Paciente::getPacienteId() {
+    return pacienteId;
+}
+
+int Paciente::getDni() {
+    return dni;
+}
+
+int Paciente::getFechaIngreso() {
+    return fechaIngreso;
+}
+
+string Paciente::getDiagnostico() {
+    return diagnostico;
+}
+
+int Paciente::getPrioridad() {
+    return prioridad;
+}
+
+float Paciente::getPesoKg() {
+    return pesoKg;
+}
+
+// Setters
+void Paciente::setCodigoHospital(string codigoHospitalNuevo) {
+    codigoHospital = codigoHospitalNuevo;
+}
+
+void Paciente::setPacienteId(int pacienteIdNuevo) {
+    pacienteId = pacienteIdNuevo;
+}
+
+void Paciente::setDni(int dniNuevo) {
+    dni = dniNuevo;
+}
+
+void Paciente::setFechaIngreso(int fechaIngresoNueva) {
+    fechaIngreso = fechaIngresoNueva;
+}
+
+void Paciente::setDiagnostico(string diagnosticoNuevo) {
+    diagnostico = diagnosticoNuevo;
+}
+
+void Paciente::setPrioridad(int prioridadNueva) {
+    prioridad = prioridadNueva;
+}
+
+void Paciente::setPesoKg(float pesoNuevo) {
+    pesoKg = pesoNuevo;
 }
