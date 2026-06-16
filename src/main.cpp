@@ -11,7 +11,7 @@ int main() {
 
     gestor.cargarPacientes("pacientes.txt");
     gestor.cargarTurnos("turnos.txt");
-    for (Turno turno : gestor.getTurnosPorHospitalEnRangoDeFecha(20250610, 20250620, "HIT")) {
+    for (Turno turno : gestor.getTurnosEnRangoDeFecha(20250610, 20250620, "HIT")) {
         cout << "Paciente ID: " << turno.getPacienteId() << ", Fecha: " << turno.getFechaTurno() << endl;
     }
 
