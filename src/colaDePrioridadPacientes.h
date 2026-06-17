@@ -10,11 +10,13 @@ class colaPrioridadPacientes {
         vector<Paciente> heap;
 
     public:
+        colaPrioridadPacientes();
         void insertar(Paciente paciente);
         Paciente extraerMasPrioritario();
         void actualizarPrioridad(int pacienteId, int nuevaPrioridad);
-        void auxInsertar(int index);
-        void auxExtraer(int index);
+        void acomodarInsercion(int index);
+        void acomodarExtraccion(int index);
+        bool tieneMayorPrioridad(Paciente paciente1, Paciente paciente2);
 
 };
 
