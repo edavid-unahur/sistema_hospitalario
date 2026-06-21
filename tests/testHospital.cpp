@@ -1,15 +1,8 @@
 #include "../src/Hospital.h"
-#include "../src/Ciudad.h"
 #include "../src/Especialidad.h"
 
 int main() {
 
-    Ciudad* ciudad =
-        new Ciudad(
-            "C001",
-            "Buenos Aires",
-            "Argentina"
-        );
 
     Especialidad* cardiologia =
         new Especialidad(
@@ -30,7 +23,7 @@ int main() {
             100,
             500000,
             50,
-            ciudad
+            "Buenos Aires"
         );
 
     hospital->agregarEspecialidad(cardiologia);

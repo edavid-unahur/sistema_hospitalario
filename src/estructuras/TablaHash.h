@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "Hospital.h"
+#include "../Hospital.h"
 
 class TablaHash {
 private:
