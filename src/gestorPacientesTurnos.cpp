@@ -31,6 +31,8 @@ void GestorPacientesTurnos::cargarPacientes(string nombreArchivo) {
         pacientes.push_back(paciente);
     }
 
+    cout << "Pacientes cargados: " << pacientes.size() << endl;
+
     archivo.close();
 }
 
@@ -59,41 +61,52 @@ void GestorPacientesTurnos::cargarTurnos(string nombreArchivo) {
 }
 
 
-/* 1. Calcular el total de pacientes atendidos por hospital en un rango de fechas dado.
-Recorrer los turnos del hospital dentro del rango de fechas.
-Contar pacientes distintos (sin repetidos).
-Si los turnos están ordenados por fecha puedo usar búsqueda binaria para la búsqueda.
-*/
+// 1
+
+// recorre pacientes en lugar de turnos contemplando emergencias, pacientes que no se presentaron a su turno, etc.
+// preguntar si se puede repetir la persona, si no agregar filtro
 
 
-vector<Turno> GestorPacientesTurnos::getTurnosEnRangoDeFecha(int fechaInicio, int fechaFin, string hospitalId) {
-    vector<Turno> turnosEnRango;
-    int pos = buscarPrimerTurnoDentroDeRango(fechaInicio, fechaFin);
+vector<pair<string,int>> GestorPacientesTurnos::getCantPacientesAtendidosPorHospital(int fechaInicio, int fechaFin) {
+    int pos = buscarPrimerPacienteDentroDeRango(fechaInicio, fechaFin);
+    vector<pair<string,int>> resultado;
+
     if (pos == -1) {
-        return turnosEnRango;
+        return resultado;
     }
 
     while (
-        pos < turnosPorFecha.size() &&
-        turnosPorFecha[pos].getFechaTurno() >= fechaInicio &&
-        turnosPorFecha[pos].getFechaTurno() <= fechaFin
+        pos < pacientesPorFechaIngreso.size() &&
+        pacientesPorFechaIngreso[pos].getFechaIngreso() <= fechaFin
     ) {
 
-        turnosEnRango.push_back(
-            turnosPorFecha[pos]
-        );
+        string hospital = pacientesPorFechaIngreso[pos].getCodigoHospital();
+        bool encontrado = false;
 
-        pos++;
+        for ( int i = 0; i < resultado.size(); i++){
+            if (resultado[i].first == hospital) {
+                resultado[i].second++;
+                encontrado = true;
+                break;
+            }
+        }
+
+        if (!encontrado) {
+            resultado.push_back(make_pair(hospital, 1));
+        }
+
+        pos++; 
+
     }
 
-    return turnosEnRango;
+    return resultado;
 }
 
-int GestorPacientesTurnos::buscarPrimerTurnoDentroDeRango(int fechaInicio, int fechaFin) {
-    inicializarTurnosPorFecha();
+int GestorPacientesTurnos::buscarPrimerPacienteDentroDeRango(int fechaInicio, int fechaFin) {
+    inicializarPacientesPorFechaIngreso();
 
     int izq = 0;
-    int der = turnosPorFecha.size() - 1;
+    int der = pacientesPorFechaIngreso.size() - 1;
 
     int resultado = -1;
 
@@ -101,9 +114,9 @@ int GestorPacientesTurnos::buscarPrimerTurnoDentroDeRango(int fechaInicio, int f
 
         int medio = (izq + der) / 2;
 
-        if (turnosPorFecha[medio].getFechaTurno() >= fechaInicio) {
+        if (pacientesPorFechaIngreso[medio].getFechaIngreso() >= fechaInicio) {
 
-            if (turnosPorFecha[medio].getFechaTurno() <= fechaFin) {
+            if (pacientesPorFechaIngreso[medio].getFechaIngreso() <= fechaFin) {
                 resultado = medio;
             }
 
@@ -118,29 +131,22 @@ int GestorPacientesTurnos::buscarPrimerTurnoDentroDeRango(int fechaInicio, int f
     return resultado;
 }
 
-void GestorPacientesTurnos::inicializarTurnosPorFecha() {
+void GestorPacientesTurnos::inicializarPacientesPorFechaIngreso() {
 
-    if (turnosPorFechaOrdenados) {
+    if (pacientesPorFechaIngresoOrdenados) {
         return;
     }
 
-    turnosPorFecha = turnos;
+    pacientesPorFechaIngreso = pacientes;
 
-    turnosPorFecha = mergeSortTurnosPorFecha(turnosPorFecha);
+    pacientesPorFechaIngreso = mergeSortPacientesPorFechaIngreso(pacientesPorFechaIngreso);
 
-    turnosPorFechaOrdenados = true;
+    pacientesPorFechaIngresoOrdenados = true;
 }
 
-/*2. Detectar hospitales con sobrecarga 
--más de X ingresos en una semana o con ocupación 
--superior al 90% de su capacidad. 
-????*/
+//2
 
-/*3. Buscar todos los turnos de un paciente dado su DNI.  
-buscar pasiente segun DNI
-obtener id_paciente
-recorrer los turnos, si el id_paciente coincide, agregar el turno a una lista 
-*/ 
+//3
 
 vector<Turno> GestorPacientesTurnos::getTurnosPorDni(int dni) {
     vector<Turno> turnosPaciente;
@@ -265,10 +271,7 @@ Asumo que:
 
 */
 
-/*5. Dado un médico (por ID), listar todos sus turnos en orden cronológico. 
-recorrer los turnos y si el id_medico coincide, agregar el turno a una lista 
-ordenar lista por fecha*/ 
-
+//5
 
 vector<Turno> GestorPacientesTurnos::getTurnosPorMedicoId(int medicoId) {
 
@@ -488,11 +491,56 @@ vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorDni(vector<Paciente
 }
 
 vector<Paciente> GestorPacientesTurnos::mergePacientesPorDni(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
+
     vector<Paciente> resultado;
     int i = 0, j = 0;
 
     while (i < izquierda.size() && j < derecha.size()) {
         if (izquierda[i].getDni() < derecha[j].getDni()) {
+            resultado.push_back(izquierda[i]);
+            i++;
+        } else {
+            resultado.push_back(derecha[j]);
+            j++;
+        }
+    }
+
+    while (i < izquierda.size()) {
+        resultado.push_back(izquierda[i]);
+        i++;
+    }
+
+    while (j < derecha.size()) {
+        resultado.push_back(derecha[j]);
+        j++;
+    }
+
+    return resultado;
+}
+
+vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorFechaIngreso(vector<Paciente>& pacientes) {
+
+    if (pacientes.size() <= 1) {
+        return pacientes;
+    }
+
+    int medio = pacientes.size() / 2;
+    vector<Paciente> izquierda(pacientes.begin(), pacientes.begin() + medio);
+    vector<Paciente> derecha(pacientes.begin() + medio, pacientes.end());
+
+    izquierda = mergeSortPacientesPorDni(izquierda);
+    derecha = mergeSortPacientesPorDni(derecha);
+
+    return mergePacientesPorDni(izquierda, derecha);
+}
+
+vector<Paciente> GestorPacientesTurnos::mergePacientesPorFechaIngreso(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
+    
+    vector<Paciente> resultado;
+    int i = 0, j = 0;
+
+    while (i < izquierda.size() && j < derecha.size()) {
+        if (izquierda[i].getFechaIngreso() < derecha[j].getFechaIngreso()) {
             resultado.push_back(izquierda[i]);
             i++;
         } else {

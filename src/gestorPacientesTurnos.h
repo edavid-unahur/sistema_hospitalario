@@ -14,10 +14,13 @@ private:
     vector<Turno> turnosPorMedicoId;
     vector<Turno> turnosPorPacienteId;
     vector<Turno> turnosPorFecha;
+    vector<Paciente> pacientesPorFechaIngreso;
+
 
     bool turnosPorFechaOrdenados = false;
     bool turnosPorMedicoOrdenados = false;
     bool pacientesPorDniOrdenados = false;
+    bool pacientesPorFechaIngresoOrdenados = false;
     bool turnosPorPacienteIdOrdenados = false;
 
 public:
@@ -26,17 +29,20 @@ public:
     void cargarPacientes(string nombreArchivo);
     void cargarTurnos(string nombreArchivo);
 
+    //Punto 1
+    vector<pair<string,int>> getCantPacientesAtendidosPorHospital(int fechaInicio, int fechaFin);
+    int buscarPrimerPacienteDentroDeRango(int fechaInicio, int fechaFin);
+    void inicializarPacientesPorFechaIngreso();
+
+    //Punto 2
+   
+
     //Punto 3
     vector<Turno> getTurnosPorDni(int dni);
     int buscarPrimerTurnoDNI(int dni);
     void inicializarTurnosPorPacienteId();
     int getPacienteIdPorDni(int dni);
     void inicializarPacientesPorDni();
-
-    //Punto 4
-    vector<Turno> getTurnosEnRangoDeFecha(int fechaInicio, int fechaFin, string hospitalId);
-    int buscarPrimerTurnoDentroDeRango(int fechaInicio, int fechaFin);
-    void inicializarTurnosPorFecha();
 
     //Punto 5
     vector<Turno> getTurnosPorMedicoId(int medicoId);
@@ -54,6 +60,8 @@ public:
     // Métodos de ordenamiento Pacientes
     vector<Paciente> mergeSortPacientesPorDni(vector<Paciente>& pacientes);
     vector<Paciente> mergePacientesPorDni(vector<Paciente>& izquierda, vector<Paciente>& derecha);
+    vector<Paciente> mergeSortPacientesPorFechaIngreso(vector<Paciente>& pacientes);
+    vector<Paciente> mergePacientesPorFechaIngreso(vector<Paciente>& izquierda, vector<Paciente>& derecha);
 };
 
 #endif

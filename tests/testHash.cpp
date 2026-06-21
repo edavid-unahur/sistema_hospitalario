@@ -1,6 +1,5 @@
 #include "../estructuras/TablaHash.h"
 #include "../Hospital.h"
-#include "../Ciudad.h"
 #include "../Especialidad.h"
 
 #include <iostream>
@@ -8,13 +7,6 @@
 using namespace std;
 
 int main() {
-
-    Ciudad* c1 =
-        new Ciudad(
-            "C001",
-            "Buenos Aires",
-            "Argentina"
-        );
 
     Especialidad* cardiologia =
         new Especialidad(
@@ -37,7 +29,7 @@ int main() {
             100,
             500000,
             50,
-            c1
+            "Buenos Aires"
         );
 
     h1->agregarEspecialidad(cardiologia);
