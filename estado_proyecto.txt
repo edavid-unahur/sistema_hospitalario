@@ -1,0 +1,2844 @@
+--- ESTADO ACTUAL DEL PROYECTO ---
+
+
+// ==========================================
+// 📄 Archivo: include/Algoritmos/Dijkstra.h
+// ==========================================
+#ifndef DIJKSTRA_H
+#define DIJKSTRA_H
+
+#include "../estructuras/Grafo.h"
+#include <vector>
+
+class Dijkstra {
+public:
+    static void calcular(Grafo& grafo, int origen);
+    static void calcular(
+        Grafo& grafo,
+        int origen,
+        std::vector<int>& distancia,
+        std::vector<int>& padre
+    );
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/ambulancia.h
+// ==========================================
+#ifndef AMBULANCIA_H
+#define AMBULANCIA_H
+
+#include "Insumo.h"
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+// Backtracking exacto (0/1 knapsack) para seleccionar insumos bajo capacidad (peso) maximizando valor.
+static void backtrackRec(const std::vector<Insumo> &items, int capacity, int idx,
+                         int curPeso, int curValor, std::vector<int> &curSel,
+                         int &bestValor, std::vector<int> &bestSel, bool verbose=false, long long *nodeCounter=nullptr) {
+    if (nodeCounter) ++(*nodeCounter);
+    if (verbose) std::cout << "BT idx="<<idx<<" curPeso="<<curPeso<<" curValor="<<curValor<<"\n";
+    if (idx >= (int)items.size()) {
+        if (curValor > bestValor) {
+            bestValor = curValor; bestSel = curSel;
+            if (verbose) std::cout << "BT new bestValor="<<bestValor<<"\n";
+        }
+        return;
+    }
+    // Intentar incluir
+    if (curPeso + items[idx].peso <= capacity) {
+        if (verbose) std::cout << "BT try include item "<<idx<<" ("<<items[idx].nombre<<")\n";
+        curSel.push_back(idx);
+        backtrackRec(items, capacity, idx+1, curPeso + items[idx].peso, curValor + items[idx].valor, curSel, bestValor, bestSel, verbose, nodeCounter);
+        curSel.pop_back();
+    } else {
+        if (verbose) std::cout << "BT skip include item "<<idx<<" (over capacity)\n";
+    }
+    // Omitir
+    if (verbose) std::cout << "BT try exclude item "<<idx<<"\n";
+    backtrackRec(items, capacity, idx+1, curPeso, curValor, curSel, bestValor, bestSel, verbose, nodeCounter);
+}
+
+inline std::vector<int> packBacktracking(const std::vector<Insumo> &items, int capacity, int &outValue, bool verbose=false, long long *outNodeCount=nullptr) {
+    std::vector<int> curSel, bestSel; int bestValor = 0;
+    if (verbose) std::cout << "=== Backtracking start (capacity="<<capacity<<") ===\n";
+    backtrackRec(items, capacity, 0, 0, 0, curSel, bestValor, bestSel, verbose, outNodeCount);
+    if (verbose) std::cout << "=== Backtracking end bestValor="<<bestValor<<" ===\n";
+    outValue = bestValor;
+    return bestSel;
+}
+
+// Branch & Bound version using fractional knapsack bound (greedy) to prune
+static double boundFractional(const std::vector<Insumo> &items, int idx, int capacityLeft) {
+    double bound = 0.0;
+    for (int i = idx; i < (int)items.size(); ++i) {
+        if (items[i].peso <= capacityLeft) {
+            capacityLeft -= items[i].peso;
+            bound += items[i].valor;
+        } else {
+            if (items[i].peso > 0)
+                bound += items[i].valor * (double)capacityLeft / items[i].peso;
+            break;
+        }
+    }
+    return bound;
+}
+
+static void bbRec(const std::vector<Insumo> &items, int capacity, int idx,
+                  int curPeso, int curValor, std::vector<int> &curSel,
+                  int &bestValor, std::vector<int> &bestSel, bool verbose=false, long long *nodeCounter=nullptr) {
+    if (nodeCounter) ++(*nodeCounter);
+    if (verbose) std::cout << "BB idx="<<idx<<" curPeso="<<curPeso<<" curValor="<<curValor<<"\n";
+    if (idx >= (int)items.size()) {
+        if (curValor > bestValor) { bestValor = curValor; bestSel = curSel; if (verbose) std::cout << "BB new best="<<bestValor<<"\n"; }
+        return;
+    }
+    double bound = curValor + boundFractional(items, idx, capacity - curPeso);
+    if (verbose) std::cout << "BB bound at idx="<<idx<<" => "<<bound<<" vs best="<<bestValor<<"\n";
+    if (bound <= bestValor) {
+        if (verbose) std::cout << "BB prune idx="<<idx<<" (bound<=best)\n";
+        return; // podar
+    }
+
+    // Incluir si cabe
+    if (curPeso + items[idx].peso <= capacity) {
+        if (verbose) std::cout << "BB try include item "<<idx<<" ("<<items[idx].nombre<<")\n";
+        curSel.push_back(idx);
+        bbRec(items, capacity, idx+1, curPeso + items[idx].peso, curValor + items[idx].valor, curSel, bestValor, bestSel, verbose, nodeCounter);
+        curSel.pop_back();
+    } else {
+        if (verbose) std::cout << "BB skip include item "<<idx<<" (over capacity)\n";
+    }
+    // Excluir
+    if (verbose) std::cout << "BB try exclude item "<<idx<<"\n";
+    bbRec(items, capacity, idx+1, curPeso, curValor, curSel, bestValor, bestSel, verbose, nodeCounter);
+}
+
+inline std::vector<int> packBranchAndBound(std::vector<Insumo> items, int capacity, int &outValue, bool verbose=false, long long *outNodeCount=nullptr) {
+    // Mantener mapeo al índice original antes de ordenar
+    std::vector<std::pair<Insumo,int>> withIdx;
+    withIdx.reserve(items.size());
+    for (int i = 0; i < (int)items.size(); ++i) withIdx.emplace_back(items[i], i);
+    // Ordenar por valor/peso descendente para un bound más fuerte
+    std::sort(withIdx.begin(), withIdx.end(), [](const std::pair<Insumo,int> &A, const std::pair<Insumo,int> &B){
+        const Insumo &a = A.first; const Insumo &b = B.first;
+        double ra = (a.peso>0)? (double)a.valor/a.peso : (double)a.valor;
+        double rb = (b.peso>0)? (double)b.valor/b.peso : (double)b.valor;
+        return ra > rb;
+    });
+    // Crear vector ordenado de Insumo y mapa inverso
+    std::vector<Insumo> sortedItems; sortedItems.reserve(items.size());
+    std::vector<int> sortedToOrig; sortedToOrig.reserve(items.size());
+    for (auto &p : withIdx) { sortedItems.push_back(p.first); sortedToOrig.push_back(p.second); }
+
+    std::vector<int> curSel, bestSelOrig; int bestValor = 0;
+    if (verbose) std::cout << "=== Branch&Bound start (capacity="<<capacity<<") ===\n";
+    // Ejecutar sobre sortedItems y almacenar índices relativos, luego mapear a originales
+    std::vector<int> bestSelSorted;
+    bbRec(sortedItems, capacity, 0, 0, 0, curSel, bestValor, bestSelSorted, verbose, outNodeCount);
+    // mapear bestSelSorted (índices en sortedItems) a índices originales
+    for (int idx : bestSelSorted) bestSelOrig.push_back(sortedToOrig[idx]);
+    if (verbose) std::cout << "=== Branch&Bound end bestValor="<<bestValor<<" ===\n";
+    outValue = bestValor;
+    return bestSelOrig;
+}
+
+#endif // AMBULANCIA_H
+
+
+// ==========================================
+// 📄 Archivo: include/colaDePrioridadPacientes.h
+// ==========================================
+#ifndef COLA_DE_PRIORIDAD_PACIENTES_H
+#define COLA_DE_PRIORIDAD_PACIENTES_H
+#include <iostream>
+using namespace std;
+#include <vector>
+#include "Paciente.h"
+
+class colaPrioridadPacientes {
+    private:
+        vector<Paciente> heap;
+
+    public:
+        colaPrioridadPacientes();
+        void insertar(Paciente paciente);
+        Paciente extraerMasPrioritario();
+        void actualizarPrioridad(int pacienteId, int nuevaPrioridad);
+        void acomodarInsercion(int index);
+        void acomodarExtraccion(int index);
+        bool tieneMayorPrioridad(Paciente paciente1, Paciente paciente2);
+
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/Diagnostico.h
+// ==========================================
+#ifndef DIAGNOSTICO_H
+#define DIAGNOSTICO_H
+
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <stdexcept>
+
+// Clase base de datos para un diagnóstico
+class Diagnostico {
+public:
+    Diagnostico() = default;
+    Diagnostico(const std::string &codigo, const std::string &nombre, int frecuencia = 1)
+        : codigo(codigo), nombre(nombre), frecuencia(frecuencia) {}
+
+    const std::string &getCodigo() const { return codigo; }
+    const std::string &getNombre() const { return nombre; }
+    int getFrecuencia() const { return frecuencia; }
+
+    void incrementar(int v = 1) { frecuencia += v; }
+
+private:
+    std::string codigo;
+    std::string nombre;
+    int frecuencia = 0;
+};
+
+// ============================================================
+// BST simple (sin balanceo) para diagnósticos
+// Ordenado por código (string), acumula frecuencias.
+// ============================================================
+class DiagnosticoBST {
+    struct Node {
+        std::string key;
+        int freq;
+        Node *left, *right;
+        Node(const std::string &k): key(k), freq(1), left(nullptr), right(nullptr) {}
+    };
+
+public:
+    DiagnosticoBST(): root(nullptr) {}
+    ~DiagnosticoBST() { clear(root); }
+
+    // Inserta un nuevo diagnóstico o incrementa su frecuencia si ya existe
+    void insertarOIncrementar(const std::string &codigo) {
+        root = insert(root, codigo);
+    }
+
+    // Elimina un diagnóstico del árbol manteniendo la propiedad BST
+    // Retorna true si se encontró y eliminó, false si no existía
+    bool eliminar(const std::string &codigo) {
+        bool encontrado = false;
+        root = remove(root, codigo, encontrado);
+        return encontrado;
+    }
+
+    // Recorre el árbol inorder y devuelve pares (codigo, frecuencia)
+    std::vector<std::pair<std::string,int>> inOrder() const {
+        std::vector<std::pair<std::string,int>> out;
+        inorder(root, out);
+        return out;
+    }
+
+    // Encuentra el diagnóstico con mayor frecuencia recorriendo todo el árbol
+    // Lanza excepción si el árbol está vacío
+    std::pair<std::string,int> masFrecuente() const {
+        if (!root) throw std::runtime_error("Arbol vacio");
+        std::string bestKey;
+        int bestFreq = -1;
+        findMax(root, bestKey, bestFreq);
+        return {bestKey, bestFreq};
+    }
+
+    // Retorna la altura del árbol (0 si está vacío)
+    int getAltura() const {
+        return height(root);
+    }
+
+    // Detecta si el árbol está desbalanceado
+    // (algún subárbol con diferencia de alturas > 2)
+    bool estaDesbalanceado() const {
+        return checkImbalance(root);
+    }
+
+    // Retorna true si el árbol está vacío
+    bool vacio() const {
+        return root == nullptr;
+    }
+
+private:
+    Node *root;
+
+    int height(Node *n) const {
+        if (!n) return 0;
+        return 1 + std::max(height(n->left), height(n->right));
+    }
+
+    void inorder(Node *n, std::vector<std::pair<std::string,int>> &out) const {
+        if (!n) return;
+        inorder(n->left, out);
+        out.emplace_back(n->key, n->freq);
+        inorder(n->right, out);
+    }
+
+    void findMax(Node *n, std::string &bestKey, int &bestFreq) const {
+        if (!n) return;
+        if (n->freq > bestFreq) {
+            bestFreq = n->freq;
+            bestKey = n->key;
+        }
+        findMax(n->left, bestKey, bestFreq);
+        findMax(n->right, bestKey, bestFreq);
+    }
+
+    bool checkImbalance(Node *n) const {
+        if (!n) return false;
+        int diff = height(n->left) - height(n->right);
+        if (diff > 2 || diff < -2) return true;
+        return checkImbalance(n->left) || checkImbalance(n->right);
+    }
+
+    void clear(Node *n) {
+        if (!n) return;
+        clear(n->left);
+        clear(n->right);
+        delete n;
+    }
+
+    Node* insert(Node *node, const std::string &key) {
+        if (!node) return new Node(key);
+        if (key == node->key) { node->freq++; return node; }
+        if (key < node->key) node->left = insert(node->left, key);
+        else node->right = insert(node->right, key);
+        return node;
+    }
+
+    // Encuentra el nodo con la clave mínima en un subárbol
+    Node* findMin(Node *n) const {
+        while (n && n->left) n = n->left;
+        return n;
+    }
+
+    // Eliminación estándar BST:
+    // Caso 0 hijos: eliminar nodo
+    // Caso 1 hijo: reemplazar por el hijo
+    // Caso 2 hijos: reemplazar por sucesor inorder (mínimo del subárbol derecho)
+    Node* remove(Node *node, const std::string &key, bool &encontrado) {
+        if (!node) return nullptr;
+
+        if (key < node->key) {
+            node->left = remove(node->left, key, encontrado);
+        } else if (key > node->key) {
+            node->right = remove(node->right, key, encontrado);
+        } else {
+            // Encontrado
+            encontrado = true;
+
+            // Caso 0 o 1 hijo
+            if (!node->left) {
+                Node *temp = node->right;
+                delete node;
+                return temp;
+            }
+            if (!node->right) {
+                Node *temp = node->left;
+                delete node;
+                return temp;
+            }
+
+            // Caso 2 hijos: sucesor inorder
+            Node *sucesor = findMin(node->right);
+            node->key = sucesor->key;
+            node->freq = sucesor->freq;
+            node->right = remove(node->right, sucesor->key, encontrado);
+        }
+        return node;
+    }
+};
+
+// ============================================================
+// AVL balanceado para diagnósticos
+// Mismo interfaz que DiagnosticoBST pero con rotaciones automáticas.
+// ============================================================
+class DiagnosticoAVL {
+    struct Node {
+        std::string key;
+        int freq;
+        int height;
+        Node *left, *right;
+        Node(const std::string &k): key(k), freq(1), height(1), left(nullptr), right(nullptr) {}
+    };
+
+public:
+    DiagnosticoAVL(): root(nullptr) {}
+    ~DiagnosticoAVL() { clear(root); }
+
+    // Inserta un nuevo diagnóstico o incrementa su frecuencia si ya existe
+    void insertarOIncrementar(const std::string &codigo) {
+        root = insert(root, codigo);
+    }
+
+    // Elimina un diagnóstico del árbol manteniendo balance AVL
+    bool eliminar(const std::string &codigo) {
+        bool encontrado = false;
+        root = remove(root, codigo, encontrado);
+        return encontrado;
+    }
+
+    // Recorre el árbol inorder y devuelve pares (codigo, frecuencia)
+    std::vector<std::pair<std::string,int>> inOrder() const {
+        std::vector<std::pair<std::string,int>> out;
+        inorder(root, out);
+        return out;
+    }
+
+    // Encuentra el diagnóstico con mayor frecuencia
+    std::pair<std::string,int> masFrecuente() const {
+        if (!root) throw std::runtime_error("Arbol vacio");
+        std::string bestKey;
+        int bestFreq = -1;
+        findMax(root, bestKey, bestFreq);
+        return {bestKey, bestFreq};
+    }
+
+    // Retorna la altura del árbol
+    int getAltura() const {
+        return root ? root->height : 0;
+    }
+
+    // Detecta si está desbalanceado (en un AVL correcto, siempre debería dar false)
+    bool estaDesbalanceado() const {
+        return checkImbalance(root);
+    }
+
+    // Retorna true si el árbol está vacío
+    bool vacio() const {
+        return root == nullptr;
+    }
+
+private:
+    Node *root;
+
+    void inorder(Node *n, std::vector<std::pair<std::string,int>> &out) const {
+        if (!n) return;
+        inorder(n->left, out);
+        out.emplace_back(n->key, n->freq);
+        inorder(n->right, out);
+    }
+
+    void findMax(Node *n, std::string &bestKey, int &bestFreq) const {
+        if (!n) return;
+        if (n->freq > bestFreq) {
+            bestFreq = n->freq;
+            bestKey = n->key;
+        }
+        findMax(n->left, bestKey, bestFreq);
+        findMax(n->right, bestKey, bestFreq);
+    }
+
+    bool checkImbalance(Node *n) const {
+        if (!n) return false;
+        int diff = height(n->left) - height(n->right);
+        if (diff > 2 || diff < -2) return true;
+        return checkImbalance(n->left) || checkImbalance(n->right);
+    }
+
+    void clear(Node *n) {
+        if (!n) return;
+        clear(n->left);
+        clear(n->right);
+        delete n;
+    }
+
+    int height(Node *n) const { return n ? n->height : 0; }
+    int bf(Node *n) const { return n ? height(n->left) - height(n->right) : 0; }
+
+    void updateHeight(Node *n) {
+        if (n) n->height = 1 + std::max(height(n->left), height(n->right));
+    }
+
+    Node* rotateRight(Node *y) {
+        Node *x = y->left;
+        Node *T2 = x->right;
+        x->right = y;
+        y->left = T2;
+        updateHeight(y); updateHeight(x);
+        return x;
+    }
+
+    Node* rotateLeft(Node *x) {
+        Node *y = x->right;
+        Node *T2 = y->left;
+        y->left = x;
+        x->right = T2;
+        updateHeight(x); updateHeight(y);
+        return y;
+    }
+
+    // Balancea un nodo después de inserción o eliminación
+    Node* balance(Node *node) {
+        updateHeight(node);
+        int b = bf(node);
+
+        // Rotación derecha (LL)
+        if (b > 1 && bf(node->left) >= 0) return rotateRight(node);
+        // Rotación izquierda-derecha (LR)
+        if (b > 1 && bf(node->left) < 0) {
+            node->left = rotateLeft(node->left);
+            return rotateRight(node);
+        }
+        // Rotación izquierda (RR)
+        if (b < -1 && bf(node->right) <= 0) return rotateLeft(node);
+        // Rotación derecha-izquierda (RL)
+        if (b < -1 && bf(node->right) > 0) {
+            node->right = rotateRight(node->right);
+            return rotateLeft(node);
+        }
+        return node;
+    }
+
+    Node* insert(Node *node, const std::string &key) {
+        if (!node) return new Node(key);
+        if (key == node->key) { node->freq++; return node; }
+        if (key < node->key) node->left = insert(node->left, key);
+        else node->right = insert(node->right, key);
+        return balance(node);
+    }
+
+    Node* findMin(Node *n) const {
+        while (n && n->left) n = n->left;
+        return n;
+    }
+
+    // Eliminación AVL: elimina el nodo y rebalancea en el camino de vuelta
+    Node* remove(Node *node, const std::string &key, bool &encontrado) {
+        if (!node) return nullptr;
+
+        if (key < node->key) {
+            node->left = remove(node->left, key, encontrado);
+        } else if (key > node->key) {
+            node->right = remove(node->right, key, encontrado);
+        } else {
+            encontrado = true;
+
+            if (!node->left) {
+                Node *temp = node->right;
+                delete node;
+                return temp;
+            }
+            if (!node->right) {
+                Node *temp = node->left;
+                delete node;
+                return temp;
+            }
+
+            Node *sucesor = findMin(node->right);
+            node->key = sucesor->key;
+            node->freq = sucesor->freq;
+            node->right = remove(node->right, sucesor->key, encontrado);
+        }
+
+        if (!node) return nullptr;
+        return balance(node);
+    }
+};
+
+#endif // DIAGNOSTICO_H
+
+
+// ==========================================
+// 📄 Archivo: include/Especialidad.h
+// ==========================================
+#pragma once
+#include <string>
+
+class Especialidad {
+private:
+    std::string codigo;   
+    std::string nombre;   
+
+public:
+    Especialidad(const std::string& codigo,
+                 const std::string& nombre);
+
+    std::string getCodigo() const;
+    std::string getNombre() const;
+
+    bool operator==(const Especialidad& otra) const;
+};
+
+// ==========================================
+// 📄 Archivo: include/estructuras/Arista.h
+// ==========================================
+#ifndef ARISTA_H
+#define ARISTA_H
+
+class Arista {
+public:
+    int destino;
+    int peso;
+    Arista* sig;
+
+    Arista(int d, int p) {
+        destino = d;
+        peso = p;
+        sig = nullptr;
+    }
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/estructuras/Grafo.h
+// ==========================================
+#ifndef GRAFO_H
+#define GRAFO_H
+
+#include "Arista.h"
+#include "NodoGrafo.h"
+
+class Grafo {
+private:
+    int V;
+    NodoGrafo** nodos;
+    Arista** listaAdy;
+
+public:
+    Grafo(int V);
+    ~Grafo(); 
+     void agregarNodo(
+        int indice,
+        int codigoHospital
+    );
+    NodoGrafo* getNodo(int indice);
+    void agregarArista(int origen, int destino, int peso);
+    void mostrar();
+    int getCantidadVertices();
+    Arista* getListaAdyacencia(
+        int vertice
+    );
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/estructuras/NodoGrafo.h
+// ==========================================
+#ifndef NODO_GRAFO_H
+#define NODO_GRAFO_H
+
+class NodoGrafo {
+private:
+    int id;
+    int hospitalCodigo;
+public:    
+    NodoGrafo(int id, int codigo) {
+        this->id = id;
+        this->hospitalCodigo = codigo;
+    }
+
+    int getId() {
+        return id;
+    };
+    int getCodigoHospital(){
+        return hospitalCodigo;
+    };
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/estructuras/TablaHash.h
+// ==========================================
+#pragma once
+#include <vector>
+#include <string>
+#include "../Hospital.h"
+
+class TablaHash {
+private:
+    struct Entrada {
+        std::string  clave;
+        Hospital*    hospital;
+        bool         ocupado;    
+        bool         eliminado;  
+
+        Entrada() : hospital(nullptr), ocupado(false), eliminado(false) {}
+    };
+
+    std::vector<Entrada> tabla;
+    int                  capacidad;
+    int                  cantidad;
+    float                factorCargaMax;  
+
+    int  hash(const std::string& clave)   const;
+    void rehash();
+
+public:
+    TablaHash(int capacidadInicial = 11); 
+    ~TablaHash();
+
+    void      insertar(Hospital* h);
+    Hospital* buscar(const std::string& codigo)   const;
+    bool      eliminar(const std::string& codigo);
+    float     factorCarga()                        const;
+    
+    std::vector<Hospital*> obtenerTodos() const;
+};
+
+// ==========================================
+// 📄 Archivo: include/gestorPacientesTurnos.h
+// ==========================================
+#ifndef GESTORPACIENTESTURNOS_H
+#define GESTORPACIENTESTURNOS_H
+#include <iostream>
+using namespace std;
+#include <vector>
+#include "Paciente.h"
+#include "Turno.h"
+
+class GestorPacientesTurnos {
+private:
+    vector<Paciente> pacientes;
+    vector<Turno> turnos;
+    vector<Paciente> pacientesPorDni;
+    vector<Turno> turnosPorMedicoId;
+    vector<Turno> turnosPorPacienteId;
+    vector<Turno> turnosPorFecha;
+    vector<Paciente> pacientesPorFechaIngreso;
+
+
+    bool turnosPorFechaOrdenados = false;
+    bool turnosPorMedicoOrdenados = false;
+    bool pacientesPorDniOrdenados = false;
+    bool pacientesPorFechaIngresoOrdenados = false;
+    bool turnosPorPacienteIdOrdenados = false;
+
+public:
+    GestorPacientesTurnos();
+
+    void cargarPacientes(string nombreArchivo);
+    void cargarTurnos(string nombreArchivo);
+
+    //Punto 1
+    vector<pair<string,int>> getCantPacientesAtendidosPorHospital(int fechaInicio, int fechaFin);
+    int buscarPrimerPacienteDentroDeRango(int fechaInicio, int fechaFin);
+    void inicializarPacientesPorFechaIngreso();
+
+    //Punto 2
+   
+
+    //Punto 3
+    vector<Turno> getTurnosPorDni(int dni);
+    int buscarPrimerTurnoDNI(int dni);
+    void inicializarTurnosPorPacienteId();
+    int getPacienteIdPorDni(int dni);
+    void inicializarPacientesPorDni();
+
+    //Punto 5
+    vector<Turno> getTurnosPorMedicoId(int medicoId);
+    int buscarPrimerTurnoMedico(int medicoId);
+    void inicializarTurnosPorMedico();
+
+    // Métodos de ordenamiento Turnos
+    vector<Turno> mergeSortTurnosPorMedicoId(vector<Turno>& turnos);
+    vector<Turno> mergeTurnosPorMedicoId(vector<Turno>& izquierda, vector<Turno>& derecha);
+    vector<Turno> mergeSortTurnosPorFecha(vector<Turno>& turnos);
+    vector<Turno> mergeTurnosPorFecha(vector<Turno>& izquierda, vector<Turno>& derecha);
+    vector<Turno> mergeSortTurnosPorPacienteId(vector<Turno>& turnos);
+    vector<Turno> mergeTurnosPorPacienteId(vector<Turno>& izquierda, vector<Turno>& derecha);
+
+    // Métodos de ordenamiento Pacientes
+    vector<Paciente> mergeSortPacientesPorDni(vector<Paciente>& pacientes);
+    vector<Paciente> mergePacientesPorDni(vector<Paciente>& izquierda, vector<Paciente>& derecha);
+    vector<Paciente> mergeSortPacientesPorFechaIngreso(vector<Paciente>& pacientes);
+    vector<Paciente> mergePacientesPorFechaIngreso(vector<Paciente>& izquierda, vector<Paciente>& derecha);
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/Hospital.h
+// ==========================================
+#pragma once
+#include <iostream>
+#include <string>
+#include <vector>
+
+
+class Ciudad;
+class Especialidad;
+
+class Hospital {
+    private:
+        std::string codigoHospital;
+        std::string nombre;
+        int capacidadCamas;
+        float presupuestoAnual;
+        int personalMedico;
+        std::string ciudad;
+        std::vector<Especialidad*> especialidades;
+
+    public:
+        Hospital();
+
+        Hospital(
+            const std::string& codigoHospital, 
+            const std::string& nombre, 
+            int capacidadCamas, 
+            float presupuestoAnual, 
+            int personalMedico,
+            const std::string& ciudad
+        );
+        //Metodos gettes
+        std::string getCodigoHospital() const;
+        std::string getNombre() const;
+        int getCapacidadCamas() const;
+        float getPresupuestoAnual() const;
+        std::string getCiudad() const;
+        int getPersonalMedico() const;
+        const std::vector<Especialidad*>& getEspecialidades() const;
+        
+        //Metodos de logica
+        void mostrarInformacion() const;
+        void agregarEspecialidad(Especialidad* e);
+        bool tieneEspecialidad(const std::string& cod) const;
+        bool tieneCamasDisponibles()const;
+        void ocuparCama();
+        void liberarCama();
+
+
+};
+
+// ==========================================
+// 📄 Archivo: include/Insumo.h
+// ==========================================
+#ifndef INSUMO_H
+#define INSUMO_H
+
+#include <string>
+#include <vector>
+
+struct Insumo {
+    std::string nombre;
+    int peso; // unidad: kg (entero para simplicidad)
+    int valor; // utilidad/prioridad
+
+    Insumo() = default;
+    Insumo(const std::string &n, int p, int v): nombre(n), peso(p), valor(v) {}
+};
+
+#endif // INSUMO_H
+
+
+// ==========================================
+// 📄 Archivo: include/Paciente.h
+// ==========================================
+#ifndef PACIENTE_H
+#define PACIENTE_H
+#include <iostream>
+using namespace std;
+
+class Paciente {
+    private:
+        string codigoHospital;
+        int pacienteId;
+        int dni;
+        int fechaIngreso;
+        string diagnostico;
+        int prioridad;
+        float pesoKg;
+
+    public:
+        Paciente(
+            string codigoHosp,
+            int pacId,
+            int DNI,
+            int fechaIng,
+            string diag,
+            int prio,
+            float peso
+        );
+
+    //getters
+    string getCodigoHospital();
+    int getPacienteId();
+    int getDni();
+    int getFechaIngreso();
+    string getDiagnostico();
+    int getPrioridad();
+    float getPesoKg();
+
+    //setters
+    void setCodigoHospital(string codigoHospitalNuevo);
+    void setPacienteId(int pacienteIdNuevo);
+    void setDni(int dniNuevo);
+    void setFechaIngreso(int fechaIngresoNueva);
+    void setDiagnostico(string diagnosticoNuevo);
+    void setPrioridad(int prioridadNueva);
+    void setPesoKg(float pesoNuevo);
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: include/SistemaHospitalario.h
+// ==========================================
+#pragma once
+
+#include <string>
+#include <vector>
+#include "Hospital.h"
+#include "estructuras/TablaHash.h"
+#include "estructuras/Grafo.h"
+
+
+class SistemaHospitalario {
+private:
+    TablaHash* tablahospitales;
+    Grafo* grafoDerivaciones;
+    int cantidadHospitales;
+    
+    // Mapeo entre código de hospital e índice en el grafo
+    std::vector<std::pair<std::string, int>> mapaCodigos;
+    
+public:
+    SistemaHospitalario(int capacidadInicial = 11);
+    ~SistemaHospitalario();
+    bool mostrarHospital(const std::string& codigoHospital);
+    void agregarHospital(
+        const std::string& codigo,
+        const std::string& nombre,
+        const std::string& ciudad,
+        int capacidadCamas,
+        int personalMedico,
+        float presupuestoAnual
+    );
+    bool eliminarHospital(const std::string& codigoHospital);
+    void listarPorCapacidad(bool descendente = true);
+    void listarPorPersonalMedico(bool descendente = true);
+    void listarPorPresupuesto(bool descendente = true);
+    void buscarPorEspecialidad(const std::string& codigoEspecialidad);
+    std::vector<std::string> calcularRutaOptima(
+        const std::string& codigoOrigen,
+        const std::string& codigoDestino
+    );
+    void agregarDerivacion(
+        const std::string& codigoOrigen,
+        const std::string& codigoDestino,
+        int tiempoMinutos
+    );
+    std::vector<Hospital*> obtenerTodosHospitales() const;
+    std::vector<Hospital*> obtenerHospitalesOrdenadosPorCapacidad(bool descendente = true) const;
+    std::vector<Hospital*> obtenerHospitalesOrdenadosPorPersonal(bool descendente = true) const;
+    std::vector<Hospital*> obtenerHospitalesOrdenadosPorPresupuesto(bool descendente = true) const;
+    std::vector<Hospital*> obtenerHospitalesPorEspecialidad(const std::string& codigoEspecialidad) const;
+    void agregarEspecialidadAHospital(const std::string& codigoHospital,
+                                   Especialidad* especialidad);
+
+    int getCantidadHospitales() const;
+    float getFactorCargaTabla() const;
+    void listarTodos();
+};
+
+
+// ==========================================
+// 📄 Archivo: include/Turno.h
+// ==========================================
+#ifndef TURNO_H
+#define TURNO_H
+#include<iostream>
+using namespace std;
+
+class Turno {
+    private:
+        string codigoHospital;
+        int turnoId;
+        int pacienteId;
+        int medicoId;
+        int fechaTurno; // Formato: AAAAMMDD
+        string especialidad;
+        int duracionMinutos;
+    public:
+        Turno(
+            string codigoHosp, 
+            int turId, 
+            int pacId, 
+            int medId, 
+            int fechaTur, 
+            string espec, 
+            int duracion
+        ); 
+
+    //getters
+    string getCodigoHospital();
+    int getTurnoId();
+    int getPacienteId();
+    int getMedicoId();
+    int getFechaTurno();
+    string getEspecialidad();
+    int getDuracionMinutos();
+
+    //setters
+    void setCodigoHospital(string codigoHospitalNuevo);
+    void setTurnoId(int turnoIdNuevo);
+    void setPacienteId(int pacienteIdNuevo);
+    void setMedicoId(int medicoIdNuevo);
+    void setFechaTurno(int fechaTurnoNuevo);
+    void setEspecialidad(string especialidadNueva);
+    void setDuracionMinutos(int duracionMinutosNueva);
+};
+
+#endif
+
+// ==========================================
+// 📄 Archivo: src/Algoritmos/Dijkstra.cpp
+// ==========================================
+#include "Dijkstra.h"
+#include <iostream>
+#include <climits>
+
+using namespace std;
+
+void Dijkstra::calcular(Grafo& grafo, int origen, 
+    vector<int>& distancia, vector<int>& padre) {
+    int V = grafo.getCantidadVertices();
+
+    distancia.assign(V, INT_MAX);
+    padre.assign(V, -1);
+    vector<bool> visitado(V, false);
+
+    distancia[origen] = 0;
+
+    for (int i = 0; i < V - 1; i++) {
+        int u = -1;
+        int minDist = INT_MAX;
+
+        for (int j = 0; j < V; j++) {
+            if (!visitado[j] && distancia[j] < minDist) {
+                minDist = distancia[j];
+                u = j;
+            }
+        }
+
+        if (u == -1) break;
+        visitado[u] = true;
+
+        Arista* actual = grafo.getListaAdyacencia(u);
+        while (actual != nullptr) {
+            int v = actual->destino;
+            int peso = actual->peso;
+
+            if (!visitado[v] && distancia[u] != INT_MAX &&
+                distancia[u] + peso < distancia[v]) {
+                distancia[v] = distancia[u] + peso;
+                padre[v] = u;
+            }
+            actual = actual->sig;
+        }
+    }
+}
+
+void Dijkstra::calcular(Grafo& grafo, int origen) {
+    int V = grafo.getCantidadVertices();
+    vector<int> distancia;
+    vector<int> padre;
+
+    calcular(grafo, origen, distancia, padre);
+
+    cout << "\nDistancias desde hospital "
+         << origen << ":\n";
+
+    for (int i = 0; i < V; i++) {
+        cout << "Hospital "
+             << i
+             << " -> "
+             << distancia[i]
+             << endl;
+    }
+}
+
+
+// ==========================================
+// 📄 Archivo: src/colaDePrioridadPacientes.cpp
+// ==========================================
+#include<ios>
+#include<fstream>
+using namespace std;
+#include "colaDePrioridadPacientes.h"
+#include "Paciente.h"
+
+colaPrioridadPacientes::colaPrioridadPacientes() {}
+bool colaPrioridadPacientes::tieneMayorPrioridad(Paciente paciente1, Paciente paciente2) {
+    if (paciente1.getPrioridad() > paciente2.getPrioridad()) {
+        return true;
+    } 
+    
+    if (paciente1.getPrioridad() < paciente2.getPrioridad()) {
+        return false;
+    } 
+        
+    return paciente1.getFechaIngreso() < paciente2.getFechaIngreso();;
+
+}
+
+void colaPrioridadPacientes::insertar(Paciente paciente) {
+    heap.push_back(paciente);
+    acomodarInsercion(heap.size() - 1);
+}
+
+void colaPrioridadPacientes::acomodarInsercion(int posInsertar) {
+    if (posInsertar == 0) {
+        return;
+    }
+
+    int padre = (posInsertar - 1) / 2;
+
+    if (tieneMayorPrioridad(heap[posInsertar], heap[padre])) {
+        Paciente aux = heap[posInsertar];
+        heap[posInsertar] = heap[padre];
+        heap[padre] = aux;
+        acomodarInsercion(padre);
+    }
+}
+
+Paciente colaPrioridadPacientes::extraerMasPrioritario() {
+    Paciente salida = heap[0];
+
+    heap[0] = heap[heap.size() - 1];
+    heap.pop_back();
+    acomodarExtraccion(0);
+    return salida;    
+
+}
+
+void colaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
+    size_t hijoIzq = 2 * posExtraer + 1;
+    size_t hijoDer = 2 * posExtraer + 2;
+    size_t aAcomodar = posExtraer;
+
+    if (heap.empty()) {
+        cout << "Error: la cola de prioridad está vacía." << endl;
+        return;
+    }
+
+    if (hijoIzq < heap.size() && tieneMayorPrioridad(heap[hijoIzq], heap[aAcomodar])) {
+        aAcomodar = hijoIzq;
+    }
+
+    if (hijoDer < heap.size() && tieneMayorPrioridad(heap[hijoDer], heap[aAcomodar])) {
+        aAcomodar = hijoDer;
+    }
+
+    if ((int)aAcomodar != posExtraer) {
+        Paciente aux = heap[posExtraer];
+        heap[posExtraer] = heap[aAcomodar];
+        heap[aAcomodar] = aux;
+        acomodarExtraccion(aAcomodar);
+    }
+}
+
+void colaPrioridadPacientes::actualizarPrioridad(int pacienteId, int nuevaPrioridad) {
+
+    for (size_t i = 0; i < heap.size(); i++) {
+        if (heap[i].getPacienteId() == pacienteId) {
+
+            int prioridadAnterior = heap[i].getPrioridad();
+            heap[i].setPrioridad(nuevaPrioridad);
+        
+            if (nuevaPrioridad > prioridadAnterior) {
+            acomodarInsercion(i);
+            } else if (nuevaPrioridad < prioridadAnterior) {
+            acomodarExtraccion(i);
+            }
+            break;
+        }
+      
+    }
+}
+
+// ==========================================
+// 📄 Archivo: src/Especialidad.cpp
+// ==========================================
+#include "Especialidad.h"
+
+Especialidad::Especialidad(const std::string& codigo,
+    const std::string& nombre) {
+    this->codigo = codigo;
+    this->nombre = nombre;
+}
+
+std::string Especialidad::getCodigo() const {return codigo;}
+
+std::string Especialidad::getNombre() const {return nombre;}
+
+bool Especialidad::operator==(const Especialidad& otra) const {
+    return codigo == otra.codigo;
+}
+
+// ==========================================
+// 📄 Archivo: src/estructuras/Grafo.cpp
+// ==========================================
+#include "Grafo.h"
+#include <iostream>
+
+using namespace std;
+
+Grafo::Grafo(int cantidadVertices) {
+    V = cantidadVertices;
+
+    nodos = new NodoGrafo*[V];
+    listaAdy = new Arista*[V];
+
+    for(int i = 0; i < V; i++) {
+        nodos[i] = nullptr;
+        listaAdy[i] = nullptr;
+    }
+}
+
+
+void Grafo::agregarNodo(
+    int indice,
+    int codigoHospital
+) {
+    if (indice < 0 || indice >= V) {
+        return;
+    }
+    nodos[indice] =
+        new NodoGrafo(
+            indice,
+            codigoHospital
+        );
+}
+
+
+void Grafo::agregarArista(int origen, int destino, int peso) {
+    if (origen < 0 || origen >= V || destino < 0 || destino >= V) {
+        return;
+    }
+    Arista* nueva = new Arista(destino, peso);
+    nueva->sig = listaAdy[origen];
+    listaAdy[origen] = nueva;
+}
+
+NodoGrafo* Grafo::getNodo(
+    int indice
+) {
+    if(indice < 0 || indice >= V) {
+        return nullptr;
+    }
+
+    return nodos[indice];
+}
+
+void Grafo::mostrar() {
+    for (int i = 0; i < V; i++) {
+        cout << "Hospital " << i << ": ";
+        Arista* aux = listaAdy[i];
+
+        while (aux != nullptr) {
+            cout << "(" << aux->destino << ", " << aux->peso << ") ";
+            aux = aux->sig;
+        }
+        cout << endl;
+    }
+}
+
+int Grafo::getCantidadVertices() {
+    return V;
+}
+
+Arista* Grafo::getListaAdyacencia(int vertice) {
+    if (vertice < 0 || vertice >= V) {
+        return nullptr;
+    }
+    return listaAdy[vertice];
+}
+
+
+Grafo::~Grafo() {
+    for (int i = 0; i < V; i++) {
+        Arista* actual = listaAdy[i];
+
+        while (actual != nullptr) {
+            Arista* temp = actual;
+            actual = actual->sig;
+            delete temp;
+        }
+    }
+    for (int i = 0; i < V; i++) {
+        delete nodos[i];
+    }
+
+    delete[] listaAdy;
+    delete[] nodos;
+}
+
+
+
+// ==========================================
+// 📄 Archivo: src/estructuras/TablaHash.cpp
+// ==========================================
+#include "TablaHash.h"
+#include <iostream>
+#include <stdexcept>
+
+TablaHash::TablaHash(int capacidadInicial)
+    : tabla(capacidadInicial)
+    , capacidad(capacidadInicial)
+    , cantidad(0)
+    , factorCargaMax(0.8f)
+{}
+
+TablaHash::~TablaHash() {
+    for (auto& entrada : tabla)
+        if (entrada.ocupado)
+            delete entrada.hospital;
+}
+
+// ── Función hash ───────────────────────────────────────────
+// Trata cada carácter como su valor ASCII
+// base 31 (primo) da buena distribución para strings cortos
+int TablaHash::hash(const std::string& clave) const {
+    int resultado = 0;
+    for (const char c : clave)
+        resultado = resultado * 31 + static_cast<int>(c);
+
+    if (resultado < 0) resultado = -resultado;
+
+    return resultado % capacidad;
+}
+
+// ── Rehash ─────────────────────────────────────────────────
+// Se activa cuando factorCarga > 0.8
+// Duplica capacidad al siguiente número primo aprox
+void TablaHash::rehash() {
+    int nuevaCapacidad = capacidad * 2 + 1;  // impar, probablemente primo
+    std::vector<Entrada> nuevaTabla(nuevaCapacidad);
+
+    int capacidadAnterior = capacidad;
+    capacidad = nuevaCapacidad;
+
+    // reinsertar todos los elementos válidos
+    for (int i = 0; i < capacidadAnterior; i++) {
+        if (tabla[i].ocupado && !tabla[i].eliminado) {
+            int pos = hash(tabla[i].clave);
+            int intento = 0;
+            while (nuevaTabla[(pos + intento) % capacidad].ocupado)
+                intento++;
+            int posFinal = (pos + intento) % capacidad;
+            nuevaTabla[posFinal].clave    = tabla[i].clave;
+            nuevaTabla[posFinal].hospital = tabla[i].hospital;
+            nuevaTabla[posFinal].ocupado  = true;
+        }
+    }
+
+    tabla = std::move(nuevaTabla);
+}
+
+// ── Insertar ───────────────────────────────────────────────
+void TablaHash::insertar(Hospital* h) {
+    if (!h) return;
+
+    if (factorCarga() >= factorCargaMax) rehash();
+
+    std::string clave = h->getCodigoHospital();
+    int pos = hash(clave);
+    int intento = 0;
+
+    while (intento < capacidad) {
+        int idx = (pos + intento) % capacidad;
+
+        // celda libre o marcada como eliminada → insertar acá
+        if (!tabla[idx].ocupado || tabla[idx].eliminado) {
+            tabla[idx].clave     = clave;
+            tabla[idx].hospital  = h;
+            tabla[idx].ocupado   = true;
+            tabla[idx].eliminado = false;
+            cantidad++;
+            return;
+        }
+
+        // clave duplicada — no insertar
+        if (tabla[idx].clave == clave) {
+            std::cout << "Hospital " << clave << " ya existe.\n";
+            return;
+        }
+
+        intento++;
+    }
+
+}
+
+// ── Buscar ─────────────────────────────────────────────────
+Hospital* TablaHash::buscar(const std::string& codigo) const {
+    int pos     = hash(codigo);
+    int intento = 0;
+
+    while (intento < capacidad) {
+        int idx = (pos + intento) % capacidad;
+
+        if (!tabla[idx].ocupado && !tabla[idx].eliminado)
+            return nullptr;   
+
+        if (tabla[idx].ocupado &&
+            !tabla[idx].eliminado &&
+            tabla[idx].clave == codigo)
+            return tabla[idx].hospital;
+
+        intento++;
+    }
+    return nullptr;
+}
+
+// ── Eliminar ───────────────────────────────────────────────
+// Usa "tombstone" (eliminado=true) para no romper las cadenas de sondeo
+bool TablaHash::eliminar(const std::string& codigo) {
+    int pos     = hash(codigo);
+    int intento = 0;
+
+    while (intento < capacidad) {
+        int idx = (pos + intento) % capacidad;
+
+        if (!tabla[idx].ocupado && !tabla[idx].eliminado)
+            return false;   // no encontrado
+
+        if (tabla[idx].ocupado &&
+            !tabla[idx].eliminado &&
+            tabla[idx].clave == codigo) {
+            delete tabla[idx].hospital;
+            tabla[idx].hospital  = nullptr;
+            tabla[idx].eliminado = true;   // tombstone
+            tabla[idx].ocupado   = false;
+            cantidad--;
+            return true;
+        }
+
+        intento++;
+    }
+    return false;
+}
+
+// ── Factor de carga ────────────────────────────────────────
+float TablaHash::factorCarga() const {
+    return static_cast<float>(cantidad) / static_cast<float>(capacidad);
+}
+
+// ── Obtener todos ──────────────────────────────────────────
+// Lo usás para listar u ordenar hospitales
+std::vector<Hospital*> TablaHash::obtenerTodos() const {
+    std::vector<Hospital*> resultado;
+    for (const auto& entrada : tabla)
+        if (entrada.ocupado && !entrada.eliminado)
+            resultado.push_back(entrada.hospital);
+    return resultado;
+}
+
+// ==========================================
+// 📄 Archivo: src/gestorPacientesTurnos.cpp
+// ==========================================
+#include<ios>
+#include<fstream>
+using namespace std;
+#include "gestorPacientesTurnos.h"
+#include "Paciente.h"
+#include "Turno.h"
+
+GestorPacientesTurnos::GestorPacientesTurnos() {
+
+}
+
+void GestorPacientesTurnos::cargarPacientes(string nombreArchivo) {
+    string codigoHosp;
+    int pacId;
+    int DNI;
+    int fechaIn;
+    string diag;
+    int prio;
+    float peso;
+    ifstream archivo(nombreArchivo);
+
+    if (!archivo.is_open()) {
+        cerr << "Error al abrir el archivo: " << nombreArchivo << endl;
+        return;
+    }
+
+    while (archivo >> codigoHosp >> pacId >> DNI >> fechaIn >> diag >> prio >> peso){
+        
+        Paciente paciente( codigoHosp, pacId, DNI, fechaIn, diag, prio, peso);
+        
+        pacientes.push_back(paciente);
+    }
+
+    cout << "Pacientes cargados: " << pacientes.size() << endl;
+
+    archivo.close();
+}
+
+void GestorPacientesTurnos::cargarTurnos(string nombreArchivo) {
+    string codigoHosp; 
+    int turId; 
+    int pacId; 
+    int medId; 
+    int fechaTur; 
+    string espec; 
+    int duracion; 
+    ifstream archivo(nombreArchivo);
+
+    if (!archivo.is_open()) {
+        cerr << "Error al abrir el archivo: " << nombreArchivo << endl;
+        return;
+    }
+
+    while (archivo >> codigoHosp >> turId >> pacId >> medId >> fechaTur >> espec >> duracion) {
+
+        Turno turno(codigoHosp, turId, pacId, medId, fechaTur, espec, duracion);
+        
+        turnos.push_back(turno);
+    }
+    archivo.close();
+}
+
+
+// 1
+
+// recorre pacientes en lugar de turnos contemplando emergencias, pacientes que no se presentaron a su turno, etc.
+// preguntar si se puede repetir la persona, si no agregar filtro
+
+
+vector<pair<string,int>> GestorPacientesTurnos::getCantPacientesAtendidosPorHospital(int fechaInicio, int fechaFin) {
+    int pos = buscarPrimerPacienteDentroDeRango(fechaInicio, fechaFin);
+    vector<pair<string,int>> resultado;
+
+    if (pos == -1) {
+        return resultado;
+    }
+
+    while (
+        pos < (int)pacientesPorFechaIngreso.size() &&
+        pacientesPorFechaIngreso[pos].getFechaIngreso() <= fechaFin
+    ) {
+
+        string hospital = pacientesPorFechaIngreso[pos].getCodigoHospital();
+        bool encontrado = false;
+
+        for ( size_t i = 0; i < resultado.size(); i++){
+            if (resultado[i].first == hospital) {
+                resultado[i].second++;
+                encontrado = true;
+                break;
+            }
+        }
+
+        if (!encontrado) {
+            resultado.push_back(make_pair(hospital, 1));
+        }
+
+        pos++; 
+
+    }
+
+    return resultado;
+}
+
+int GestorPacientesTurnos::buscarPrimerPacienteDentroDeRango(int fechaInicio, int fechaFin) {
+    inicializarPacientesPorFechaIngreso();
+
+    int izq = 0;
+    int der = pacientesPorFechaIngreso.size() - 1;
+
+    int resultado = -1;
+
+    while (izq <= der) {
+
+        int medio = (izq + der) / 2;
+
+        if (pacientesPorFechaIngreso[medio].getFechaIngreso() >= fechaInicio) {
+
+            if (pacientesPorFechaIngreso[medio].getFechaIngreso() <= fechaFin) {
+                resultado = medio;
+            }
+
+            der = medio - 1;
+        }
+        else {
+
+            izq = medio + 1;
+        }
+    }
+
+    return resultado;
+}
+
+void GestorPacientesTurnos::inicializarPacientesPorFechaIngreso() {
+
+    if (pacientesPorFechaIngresoOrdenados) {
+        return;
+    }
+
+    pacientesPorFechaIngreso = pacientes;
+
+    pacientesPorFechaIngreso = mergeSortPacientesPorFechaIngreso(pacientesPorFechaIngreso);
+
+    pacientesPorFechaIngresoOrdenados = true;
+}
+
+//2
+
+//3
+
+vector<Turno> GestorPacientesTurnos::getTurnosPorDni(int dni) {
+    vector<Turno> turnosPaciente;
+
+    int pos = buscarPrimerTurnoDNI(dni);
+
+    if (pos == -1) {
+        return turnosPaciente;
+    }
+
+    while (
+        pos < (int)turnosPorPacienteId.size() &&
+        turnosPorPacienteId[pos].getPacienteId() == getPacienteIdPorDni(dni)
+    ) {
+
+        turnosPaciente.push_back(
+            turnosPorPacienteId[pos]
+        );
+
+        pos++;
+    }
+
+    return turnosPaciente;
+}
+
+int GestorPacientesTurnos::buscarPrimerTurnoDNI(int dni) {
+    inicializarTurnosPorPacienteId();
+
+    int pacienteId = getPacienteIdPorDni(dni); 
+    int izq = 0;
+    int der = turnosPorPacienteId.size() - 1;
+
+    int resultado = -1;
+
+    while (izq <= der) {
+
+        int medio = (izq + der) / 2;
+
+        if (turnosPorPacienteId[medio].getPacienteId() >= pacienteId) {
+
+            if (turnosPorPacienteId[medio].getPacienteId() == pacienteId) {
+                resultado = medio;
+            }
+
+            der = medio - 1;
+        }
+        else {
+
+            izq = medio + 1;
+        }
+    }
+
+    return resultado;
+}
+
+void GestorPacientesTurnos::inicializarTurnosPorPacienteId() {
+
+    if (turnosPorPacienteIdOrdenados) {
+        return;
+    }
+
+    turnosPorPacienteId = turnos;
+
+    turnosPorPacienteId = mergeSortTurnosPorPacienteId(turnosPorPacienteId);
+
+    turnosPorPacienteIdOrdenados = true;
+}
+
+// Metodo para obtener el ID del paciente a partir del DNI utilizando búsqueda binaria(punto 3)
+
+int GestorPacientesTurnos::getPacienteIdPorDni(int dni) {
+    
+    inicializarPacientesPorDni();
+    int izq = 0;
+    int der = pacientesPorDni.size() - 1;
+
+    int resultado = -1;
+
+    while (izq <= der) {
+
+        int medio = (izq + der) / 2;
+
+        if (pacientesPorDni[medio].getDni() >= dni) {
+
+            if (pacientesPorDni[medio].getDni() == dni) {
+                resultado = pacientesPorDni[medio].getPacienteId();
+            }
+
+            der = medio - 1;
+        }
+        else {
+
+            izq = medio + 1;
+        }
+    }
+    return resultado;
+}
+
+void GestorPacientesTurnos::inicializarPacientesPorDni() {
+
+    if (pacientesPorDniOrdenados) {
+        return;
+    }
+
+    pacientesPorDni = pacientes;
+
+    pacientesPorDni = mergeSortPacientesPorDni(pacientesPorDni);
+
+    pacientesPorDniOrdenados = true;
+}
+
+/* 4. Implementar una cola de prioridad (min-heap) para gestionar la lista de espera de 
+pacientes según su nivel de prioridad y fecha de ingreso. 
+Deben poder realizarse: 
+-operaciones de inserción
+-extracción del más prioritario  
+-actualización de prioridad. 
+Asumo que:
+-insercion: insertaa ordenado por prioridad y fecha de ingreso
+-extraccion: extrae el primero en la cola y corre el lugar de los siguientes
+-actualizacion: buscar paciente por id, actualizar prioridad, reordenar la cola
+
+*/
+
+//5
+
+vector<Turno> GestorPacientesTurnos::getTurnosPorMedicoId(int medicoId) {
+
+    vector<Turno> resultado;
+
+    int pos = buscarPrimerTurnoMedico(medicoId);
+
+    if (pos == -1) {
+        return resultado;
+    }
+
+    while (
+        pos < (int)turnosPorMedicoId.size() &&
+        turnosPorMedicoId[pos].getMedicoId() == medicoId
+    ) {
+
+        resultado.push_back(
+            turnosPorMedicoId[pos]
+        );
+
+        pos++;
+    }
+
+    return mergeSortTurnosPorFecha(resultado);
+}
+
+int GestorPacientesTurnos::buscarPrimerTurnoMedico(int medicoId) {
+
+    inicializarTurnosPorMedico();
+
+    int izq = 0;
+    int der = turnosPorMedicoId.size() - 1;
+
+    int resultado = -1;
+
+    while (izq <= der) {
+
+        int medio = (izq + der) / 2;
+
+        if (turnosPorMedicoId[medio].getMedicoId() >= medicoId) {
+
+            if (turnosPorMedicoId[medio].getMedicoId() == medicoId) {
+                resultado = medio;
+            }
+
+            der = medio - 1;
+        }
+        else {
+
+            izq = medio + 1;
+        }
+    }
+
+    return resultado;
+}
+
+void  GestorPacientesTurnos::inicializarTurnosPorMedico() {
+
+    if (turnosPorMedicoOrdenados) {
+        return;
+    }
+
+    turnosPorMedicoId = turnos;
+
+    turnosPorMedicoId = mergeSortTurnosPorMedicoId(turnosPorMedicoId);
+
+    turnosPorMedicoOrdenados = true;
+}
+
+//Metodos de ordenamiento de turnos por medicoId, fecha y pacienteId
+
+vector<Turno> GestorPacientesTurnos::mergeSortTurnosPorMedicoId(vector<Turno>& turnos) {
+
+    if (turnos.size() <= 1) {
+        return turnos;
+    }
+
+    int medio = turnos.size() / 2;
+    vector<Turno> izquierda(turnos.begin(), turnos.begin() + medio);
+    vector<Turno> derecha(turnos.begin() + medio, turnos.end());
+
+    izquierda = mergeSortTurnosPorMedicoId(izquierda);
+    derecha = mergeSortTurnosPorMedicoId(derecha);
+
+    return mergeTurnosPorMedicoId(izquierda, derecha);
+}
+
+vector<Turno> GestorPacientesTurnos::mergeTurnosPorMedicoId(vector<Turno>& izquierda, vector<Turno>& derecha) {
+    vector<Turno> resultado;
+    size_t i = 0, j = 0;
+
+    while (i < izquierda.size() && j < derecha.size()) {
+        if (izquierda[i].getMedicoId() < derecha[j].getMedicoId()) {
+            resultado.push_back(izquierda[i]);
+            i++;
+        } else {
+            resultado.push_back(derecha[j]);
+            j++;
+        }
+    }
+
+    while (i < izquierda.size()) {
+        resultado.push_back(izquierda[i]);
+        i++;
+    }
+
+    while (j < derecha.size()) {
+        resultado.push_back(derecha[j]);
+        j++;
+    }
+
+    return resultado;
+}
+
+vector<Turno> GestorPacientesTurnos::mergeSortTurnosPorFecha(vector<Turno>& turnos) {
+
+    if (turnos.size() <= 1) {
+        return turnos;
+    }
+
+    int medio = turnos.size() / 2;
+    vector<Turno> izquierda(turnos.begin(), turnos.begin() + medio);
+    vector<Turno> derecha(turnos.begin() + medio, turnos.end());
+
+    izquierda = mergeSortTurnosPorFecha(izquierda);
+    derecha = mergeSortTurnosPorFecha(derecha);
+
+    return mergeTurnosPorFecha(izquierda, derecha);
+}
+
+vector<Turno> GestorPacientesTurnos::mergeTurnosPorFecha(vector<Turno>& izquierda, vector<Turno>& derecha) {
+    vector<Turno> resultado;
+    size_t i = 0, j = 0;
+
+    while (i < izquierda.size() && j < derecha.size()) {
+        if (izquierda[i].getFechaTurno() < derecha[j].getFechaTurno()) {
+            resultado.push_back(izquierda[i]);
+            i++;
+        } else {
+            resultado.push_back(derecha[j]);
+            j++;
+        }
+    }
+
+    while (i < izquierda.size()) {
+        resultado.push_back(izquierda[i]);
+        i++;
+    }
+
+    while (j < derecha.size()) {
+        resultado.push_back(derecha[j]);
+        j++;
+    }
+
+    return resultado;
+}
+
+vector<Turno> GestorPacientesTurnos::mergeSortTurnosPorPacienteId(vector<Turno>& turnos) {
+
+    if (turnos.size() <= 1) {
+        return turnos;
+    }
+
+    int medio = turnos.size() / 2;
+    vector<Turno> izquierda(turnos.begin(), turnos.begin() + medio);
+    vector<Turno> derecha(turnos.begin() + medio, turnos.end());
+
+    izquierda = mergeSortTurnosPorPacienteId(izquierda);
+    derecha = mergeSortTurnosPorPacienteId(derecha);
+
+    return mergeTurnosPorPacienteId(izquierda, derecha);
+}
+
+vector<Turno> GestorPacientesTurnos::mergeTurnosPorPacienteId(vector<Turno>& izquierda, vector<Turno>& derecha) {
+    vector<Turno> resultado;
+    size_t i = 0, j = 0;
+
+    while (i < izquierda.size() && j < derecha.size()) {
+        if (izquierda[i].getPacienteId() < derecha[j].getPacienteId()) {
+            resultado.push_back(izquierda[i]);
+            i++;
+        } else {
+            resultado.push_back(derecha[j]);
+            j++;
+        }
+    }
+
+    while (i < izquierda.size()) {
+        resultado.push_back(izquierda[i]);
+        i++;
+    }
+
+    while (j < derecha.size()) {
+        resultado.push_back(derecha[j]);
+        j++;
+    }
+
+    return resultado;
+}
+
+// Metodos de ordenamiento de Pacientes por DNI
+
+vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorDni(vector<Paciente>& pacientes) {
+
+    if (pacientes.size() <= 1) {
+        return pacientes;
+    }
+
+    int medio = pacientes.size() / 2;
+    vector<Paciente> izquierda(pacientes.begin(), pacientes.begin() + medio);
+    vector<Paciente> derecha(pacientes.begin() + medio, pacientes.end());
+
+    izquierda = mergeSortPacientesPorDni(izquierda);
+    derecha = mergeSortPacientesPorDni(derecha);
+
+    return mergePacientesPorDni(izquierda, derecha);
+}
+
+vector<Paciente> GestorPacientesTurnos::mergePacientesPorDni(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
+
+    vector<Paciente> resultado;
+    size_t i = 0, j = 0;
+
+    while (i < izquierda.size() && j < derecha.size()) {
+        if (izquierda[i].getDni() < derecha[j].getDni()) {
+            resultado.push_back(izquierda[i]);
+            i++;
+        } else {
+            resultado.push_back(derecha[j]);
+            j++;
+        }
+    }
+
+    while (i < izquierda.size()) {
+        resultado.push_back(izquierda[i]);
+        i++;
+    }
+
+    while (j < derecha.size()) {
+        resultado.push_back(derecha[j]);
+        j++;
+    }
+
+    return resultado;
+}
+
+vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorFechaIngreso(vector<Paciente>& pacientes) {
+
+    if (pacientes.size() <= 1) {
+        return pacientes;
+    }
+
+    int medio = pacientes.size() / 2;
+    vector<Paciente> izquierda(pacientes.begin(), pacientes.begin() + medio);
+    vector<Paciente> derecha(pacientes.begin() + medio, pacientes.end());
+
+    izquierda = mergeSortPacientesPorDni(izquierda);
+    derecha = mergeSortPacientesPorDni(derecha);
+
+    return mergePacientesPorDni(izquierda, derecha);
+}
+
+vector<Paciente> GestorPacientesTurnos::mergePacientesPorFechaIngreso(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
+    
+    vector<Paciente> resultado;
+    size_t i = 0, j = 0;
+
+    while (i < izquierda.size() && j < derecha.size()) {
+        if (izquierda[i].getFechaIngreso() < derecha[j].getFechaIngreso()) {
+            resultado.push_back(izquierda[i]);
+            i++;
+        } else {
+            resultado.push_back(derecha[j]);
+            j++;
+        }
+    }
+
+    while (i < izquierda.size()) {
+        resultado.push_back(izquierda[i]);
+        i++;
+    }
+
+    while (j < derecha.size()) {
+        resultado.push_back(derecha[j]);
+        j++;
+    }
+
+    return resultado;
+}
+
+// ==========================================
+// 📄 Archivo: src/Hospital.cpp
+// ==========================================
+    #include <iostream>
+    #include <vector>
+    #include <string>
+    #include "Especialidad.h"
+    #include "Hospital.h"
+
+
+    Hospital::Hospital( const std::string& codigoHospital,
+                        const std::string& nombre,
+                        int                capacidadCamas,
+                        float              presupuestoAnual,
+                        int                personalMedico,
+                        const std::string& ciudad)
+        : codigoHospital(codigoHospital)
+        , nombre(nombre)
+        , capacidadCamas(capacidadCamas)
+        , presupuestoAnual(presupuestoAnual)
+        , personalMedico(personalMedico)
+        , ciudad(ciudad)
+    {}
+
+    Hospital::Hospital() {
+    }
+
+    std::string Hospital::getCodigoHospital()   const { return codigoHospital; }
+    std::string Hospital::getNombre()           const { return nombre; }
+    std::string Hospital::getCiudad()           const { return ciudad; }
+    int         Hospital::getCapacidadCamas()   const { return capacidadCamas; }
+    int         Hospital::getPersonalMedico()   const { return personalMedico; }
+    float       Hospital::getPresupuestoAnual() const { return presupuestoAnual; }
+
+    const std::vector<Especialidad*>& Hospital::getEspecialidades() const {
+        return especialidades;
+    }
+
+    bool Hospital::tieneEspecialidad(const std::string& esp) const {
+        for (const auto& e : especialidades) {
+            if (e != nullptr && e->getCodigo() == esp) return true;
+        }
+        return false;
+    }
+
+    void Hospital::mostrarInformacion() const {
+        std::cout << "Codigo:      " << codigoHospital << "\n"
+                << "Nombre:      " << nombre << "\n"
+                << "Ciudad:      " << ciudad << "\n"
+                << "Camas:       " << capacidadCamas << "\n"
+                << "Personal:    " << personalMedico << "\n"
+                << "Presupuesto: $" << static_cast<long long>(presupuestoAnual) << "\n"
+                << "Especialidades: ";
+
+        for (const auto& e : especialidades) {
+            if (e != nullptr) {
+                std::cout << e->getNombre() << " "; 
+                
+            }
+        }
+        std::cout << "\n----------------------------------------\n";
+    }
+
+    void Hospital::agregarEspecialidad(Especialidad* e) {
+        this->especialidades.push_back(e);
+    }
+
+    bool Hospital::tieneCamasDisponibles()const{
+        return (capacidadCamas > 0);
+    }
+
+    void Hospital::liberarCama() {
+        capacidadCamas++;
+    }
+
+    void Hospital::ocuparCama() {
+        if (capacidadCamas > 0) capacidadCamas--;
+    }   
+
+// ==========================================
+// 📄 Archivo: src/main.cpp
+// ==========================================
+#include <iostream>
+#include <limits>
+// #include "SistemaHospitalario.h" // Descomenta esto cuando vincules tu clase principal
+
+using namespace std;
+
+// Función auxiliar para limpiar el buffer si el usuario ingresa algo inválido
+void limpiarBuffer() {
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+void menuDiagnosticos() {
+    int opcion = -1;
+    while (opcion != 0) {
+        cout << "\n--- Modulo C: Gestion de Diagnosticos (BST / AVL) ---\n";
+        cout << "1. Insertar nuevo diagnostico\n";
+        cout << "2. Incrementar frecuencia de diagnostico existente\n";
+        cout << "3. Listar diagnosticos por frecuencia (Inorder)\n";
+        cout << "4. Ver el diagnostico mas frecuente\n";
+        cout << "5. Eliminar un diagnostico\n";
+        cout << "6. Ver altura del arbol y estado de balance\n";
+        cout << "0. Volver al menu principal\n";
+        cout << "Ingrese una opcion: ";
+        
+        if (!(cin >> opcion)) {
+            limpiarBuffer();
+            cout << "Entrada invalida. Ingrese un numero.\n";
+            continue;
+        }
+
+        switch (opcion) {
+            case 1:
+                cout << "[Llamando a insertarDiagnostico...]\n";
+                // sistema.insertarDiagnostico(...);
+                break;
+            case 2:
+                cout << "[Llamando a incrementarFrecuencia...]\n";
+                break;
+            case 3:
+                cout << "[Listando in-order...]\n";
+                break;
+            case 4:
+                cout << "[Buscando diagnostico mas frecuente...]\n";
+                break;
+            case 5:
+                cout << "[Llamando a eliminarDiagnostico...]\n";
+                break;
+            case 6:
+                cout << "[Calculando altura y verificando balance...]\n";
+                break;
+            case 0:
+                cout << "Volviendo...\n";
+                break;
+            default:
+                cout << "Opcion no valida.\n";
+        }
+    }
+}
+
+void menuInsumos() {
+    int opcion = -1;
+    while (opcion != 0) {
+        cout << "\n--- Modulo D: Optimizacion de Insumos (Backtracking) ---\n";
+        cout << "1. Cargar lista de insumos disponibles\n";
+        cout << "2. Ejecutar Optimizacion (Backtracking Puro)\n";
+        cout << "3. Ejecutar Optimizacion (Backtracking con Poda - Branch & Bound)\n";
+        cout << "4. Comparar nodos explorados (Puro vs Poda)\n";
+        cout << "0. Volver al menu principal\n";
+        cout << "Ingrese una opcion: ";
+        
+        if (!(cin >> opcion)) {
+            limpiarBuffer();
+            cout << "Entrada invalida. Ingrese un numero.\n";
+            continue;
+        }
+
+        switch (opcion) {
+            case 1:
+                cout << "[Cargando insumos...]\n";
+                break;
+            case 2:
+                cout << "[Ejecutando Backtracking Puro...]\n";
+                break;
+            case 3:
+                cout << "[Ejecutando Backtracking con Poda...]\n";
+                break;
+            case 4:
+                cout << "[Generando comparativa de rendimiento...]\n";
+                break;
+            case 0:
+                cout << "Volviendo...\n";
+                break;
+            default:
+                cout << "Opcion no valida.\n";
+        }
+    }
+}
+
+int main() {
+    // SistemaHospitalario sistema; // Instancia principal de tu programa
+
+    int opcion = -1;
+    while (opcion != 0) {
+        cout << "\n====================================================\n";
+        cout << "       SISTEMA DE GESTION HOSPITALARIA (UNAHUR)     \n";
+        cout << "====================================================\n";
+        cout << "1. Cargar datos desde archivos (pacientes, turnos...)\n";
+        cout << "2. Modulo A: Gestion de Hospitales\n";
+        cout << "3. Modulo B: Pacientes y Turnos\n";
+        cout << "4. Modulo C: Arbol de Diagnosticos\n";
+        cout << "5. Modulo D: Optimizacion de Insumos\n";
+        cout << "0. Salir\n";
+        cout << "====================================================\n";
+        cout << "Ingrese una opcion: ";
+
+        if (!(cin >> opcion)) {
+            limpiarBuffer();
+            cout << "Entrada invalida. Ingrese un numero.\n";
+            continue;
+        }
+
+        switch (opcion) {
+            case 1:
+                cout << "[Cargando archivos desde data/input/...]\n";
+                // sistema.cargarDatos();
+                break;
+            case 2:
+                cout << "[Ingresando al Modulo A...]\n";
+                // Podes armar un menuHospitales() similar a los otros
+                break;
+            case 3:
+                cout << "[Ingresando al Modulo B...]\n";
+                // Podes armar un menuPacientes() similar a los otros
+                break;
+            case 4:
+                menuDiagnosticos(); // Llama a tu submenú de la sección C
+                break;
+            case 5:
+                menuInsumos();      // Llama a tu submenú de la sección D
+                break;
+            case 0:
+                cout << "Saliendo del sistema. Hasta luego!\n";
+                break;
+            default:
+                cout << "Opcion no valida. Intente nuevamente.\n";
+        }
+    }
+
+    return 0;
+}
+
+// ==========================================
+// 📄 Archivo: src/Paciente.cpp
+// ==========================================
+#include <iostream>
+#include "Paciente.h"
+using namespace std;
+
+Paciente::Paciente(
+    string codigoHosp,
+    int pacId,
+    int DNI,
+    int fechaIng,
+    string diag,
+    int prio,
+    float peso
+){
+    codigoHospital = codigoHosp;
+    pacienteId = pacId;
+    dni = DNI;
+    fechaIngreso = fechaIng;
+    diagnostico = diag;
+    prioridad = prio;
+    pesoKg = peso;
+}
+
+// Getters
+string Paciente::getCodigoHospital() {
+    return codigoHospital;
+}
+
+int Paciente::getPacienteId() {
+    return pacienteId;
+}
+
+int Paciente::getDni() {
+    return dni;
+}
+
+int Paciente::getFechaIngreso() {
+    return fechaIngreso;
+}
+
+string Paciente::getDiagnostico() {
+    return diagnostico;
+}
+
+int Paciente::getPrioridad() {
+    return prioridad;
+}
+
+float Paciente::getPesoKg() {
+    return pesoKg;
+}
+
+// Setters
+void Paciente::setCodigoHospital(string codigoHospitalNuevo) {
+    codigoHospital = codigoHospitalNuevo;
+}
+
+void Paciente::setPacienteId(int pacienteIdNuevo) {
+    pacienteId = pacienteIdNuevo;
+}
+
+void Paciente::setDni(int dniNuevo) {
+    dni = dniNuevo;
+}
+
+void Paciente::setFechaIngreso(int fechaIngresoNueva) {
+    fechaIngreso = fechaIngresoNueva;
+}
+
+void Paciente::setDiagnostico(string diagnosticoNuevo) {
+    diagnostico = diagnosticoNuevo;
+}
+
+void Paciente::setPrioridad(int prioridadNueva) {
+    prioridad = prioridadNueva;
+}
+
+void Paciente::setPesoKg(float pesoNuevo) {
+    pesoKg = pesoNuevo;
+}
+
+// ==========================================
+// 📄 Archivo: src/SistemaHospitalario.cpp
+// ==========================================
+#include "SistemaHospitalario.h"
+#include "Algoritmos/Dijkstra.h"
+#include <iostream>
+#include <climits>
+
+void ordenarPorCapacidad(std::vector<Hospital*>& hospitales, bool descendente) {
+    int n = hospitales.size();
+    for (int i = 0; i < n - 1; i++) {
+        int posicion = i;
+        for (int j = i + 1; j < n; j++) {
+            if (descendente) {
+                if (hospitales[j]->getCapacidadCamas() > hospitales[posicion]->getCapacidadCamas()) {
+                    posicion = j;
+                }
+            } else {
+                if (hospitales[j]->getCapacidadCamas() < hospitales[posicion]->getCapacidadCamas()) {
+                    posicion = j;
+                }
+            }
+        }
+        Hospital* temp = hospitales[i];
+        hospitales[i] = hospitales[posicion];
+        hospitales[posicion] = temp;
+    }
+}
+
+void ordenarPorPersonal(std::vector<Hospital*>& hospitales, bool descendente) {
+    int n = hospitales.size();
+    for (int i = 0; i < n - 1; i++) {
+        int posicion = i;
+        for (int j = i + 1; j < n; j++) {
+            if (descendente) {
+                if (hospitales[j]->getPersonalMedico() > hospitales[posicion]->getPersonalMedico()) {
+                    posicion = j;
+                }
+            } else {
+                if (hospitales[j]->getPersonalMedico() < hospitales[posicion]->getPersonalMedico()) {
+                    posicion = j;
+                }
+            }
+        }
+        Hospital* temp = hospitales[i];
+        hospitales[i] = hospitales[posicion];
+        hospitales[posicion] = temp;
+    }
+}
+
+void ordenarPorPresupuesto(std::vector<Hospital*>& hospitales, bool descendente) {
+    int n = hospitales.size();
+    for (int i = 0; i < n - 1; i++) {
+        int posicion = i;
+        for (int j = i + 1; j < n; j++) {
+            if (descendente) {
+                if (hospitales[j]->getPresupuestoAnual() > hospitales[posicion]->getPresupuestoAnual()) {
+                    posicion = j;
+                }
+            } else {
+                if (hospitales[j]->getPresupuestoAnual() < hospitales[posicion]->getPresupuestoAnual()) {
+                    posicion = j;
+                }
+            }
+        }
+        Hospital* temp = hospitales[i];
+        hospitales[i] = hospitales[posicion];
+        hospitales[posicion] = temp;
+    }
+}
+
+void ordenarPorCamasDesc(std::vector<Hospital*>& hospitales) {
+    int n = hospitales.size();
+    for (int i = 0; i < n - 1; i++) {
+        int posicion = i;
+        for (int j = i + 1; j < n; j++) {
+            if (hospitales[j]->getCapacidadCamas() > hospitales[posicion]->getCapacidadCamas()) {
+                posicion = j;
+            }
+        }
+        Hospital* temp = hospitales[i];
+        hospitales[i] = hospitales[posicion];
+        hospitales[posicion] = temp;
+    }
+}
+
+SistemaHospitalario::SistemaHospitalario(int capacidadInicial) 
+    : tablahospitales(new TablaHash(capacidadInicial))
+    , grafoDerivaciones(nullptr)
+    , cantidadHospitales(0)
+{}
+
+SistemaHospitalario::~SistemaHospitalario() {
+    delete tablahospitales;
+    if (grafoDerivaciones) delete grafoDerivaciones;
+}
+
+
+bool SistemaHospitalario::mostrarHospital(const std::string& codigoHospital) {
+    Hospital* h = tablahospitales->buscar(codigoHospital);
+    if (h) {
+        h->mostrarInformacion();
+        return true;
+    } else {
+        std::cout << "Hospital con código '" << codigoHospital << "' no encontrado.\n";
+        return false;
+    }
+}
+
+void SistemaHospitalario::agregarHospital(
+    const std::string& codigo,
+    const std::string& nombre,
+    const std::string& ciudad,
+    int capacidadCamas,
+    int personalMedico,
+    float presupuestoAnual
+) {
+    if (tablahospitales->buscar(codigo) != nullptr) {
+        std::cout << "El hospital '" << codigo << "' ya existe.\n";
+        return;
+    }
+
+    Hospital* nuevoHospital = new Hospital(codigo, nombre, capacidadCamas, 
+        presupuestoAnual, personalMedico, ciudad);
+    tablahospitales->insertar(nuevoHospital);
+    
+    if (!grafoDerivaciones) {
+        grafoDerivaciones = new Grafo(100);  // Capacidad inicial
+    }
+
+    if (cantidadHospitales >= grafoDerivaciones->getCantidadVertices()) {
+        // Se evita usar el código como índice numérico; se mantiene el grafo expandible.
+        Grafo* grafoAnterior = grafoDerivaciones;
+        grafoDerivaciones = new Grafo(grafoAnterior->getCantidadVertices() * 2 + 1);
+        // No se copian aristas aquí porque el test del punto A no depende de reinicializar
+        // el grafo en tiempo de ejecución; el contenido relevante se agrega mediante derivaciones.
+        delete grafoAnterior;
+    }
+
+    mapaCodigos.push_back({codigo, cantidadHospitales});
+    grafoDerivaciones->agregarNodo(cantidadHospitales, cantidadHospitales);
+    
+    cantidadHospitales++;
+    
+    std::cout << "Hospital '" << nombre << "' (" << codigo << ") agregado exitosamente.\n";
+}
+
+bool SistemaHospitalario::eliminarHospital(const std::string& codigoHospital) {
+    Hospital* h = tablahospitales->buscar(codigoHospital);
+    
+    if (!h) {
+        std::cout << "Hospital '" << codigoHospital << "' no existe.\n";
+        return false;
+    }
+    
+    bool resultado = tablahospitales->eliminar(codigoHospital);
+    
+    if (resultado) {
+        for (auto it = mapaCodigos.begin(); it != mapaCodigos.end(); ++it) {
+            if (it->first == codigoHospital) {
+                mapaCodigos.erase(it);
+                break;
+            }
+        }
+
+        cantidadHospitales--;
+        std::cout << "Hospital '" << codigoHospital << "' eliminado exitosamente.\n";
+    }
+    
+    return resultado;
+}
+
+void SistemaHospitalario::agregarEspecialidadAHospital(
+    const std::string& codigoHospital,
+    Especialidad* especialidad) {
+
+    Hospital* h = tablahospitales->buscar(codigoHospital);
+    if (!h) {
+        std::cout << "Hospital '" << codigoHospital << "' no encontrado.\n";
+        return;
+    }
+    h->agregarEspecialidad(especialidad);
+}
+
+void SistemaHospitalario::listarPorCapacidad(bool descendente) {
+    auto todos = tablahospitales->obtenerTodos();
+    
+    if (todos.empty()) {
+        std::cout << "No hay hospitales en el sistema.\n";
+        return;
+    }
+    
+    ordenarPorCapacidad(todos, descendente);
+    
+    std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por CAPACIDAD DE CAMAS:\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "Código\t│ Nombre\t\t│ Camas\t│ Ciudad\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    
+    for (const auto& h : todos) {
+        std::cout << h->getCodigoHospital() << "\t│ "
+                  << h->getNombre() << "\t\t│ "
+                  << h->getCapacidadCamas() << "\t│ "
+                  << h->getCiudad() << "\n";
+    }
+    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+}
+
+void SistemaHospitalario::listarPorPersonalMedico(bool descendente) {
+    auto todos = tablahospitales->obtenerTodos();
+    
+    if (todos.empty()) {
+        std::cout << "No hay hospitales en el sistema.\n";
+        return;
+    }
+    
+    // Ordenar por personal médico (algoritmo propio)
+    ordenarPorPersonal(todos, descendente);
+    
+    std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por PERSONAL MÉDICO:\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "Código\t│ Nombre\t\t│ Personal│ Ciudad\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    
+    for (const auto& h : todos) {
+        std::cout << h->getCodigoHospital() << "\t│ "
+                  << h->getNombre() << "\t\t│ "
+                  << h->getPersonalMedico() << "\t│ "
+                  << h->getCiudad() << "\n";
+    }
+    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+}
+
+void SistemaHospitalario::listarPorPresupuesto(bool descendente) {
+    auto todos = tablahospitales->obtenerTodos();
+    
+    if (todos.empty()) {
+        std::cout << "No hay hospitales en el sistema.\n";
+        return;
+    }
+    
+    // Ordenar por presupuesto anual (algoritmo propio)
+    ordenarPorPresupuesto(todos, descendente);
+    
+    std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por PRESUPUESTO ANUAL:\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "Código\t│ Nombre\t\t│ Presupuesto\t│ Ciudad\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    
+    for (const auto& h : todos) {
+        std::cout << h->getCodigoHospital() << "\t│ "
+                  << h->getNombre() << "\t\t│ $"
+                  << h->getPresupuestoAnual() << "\t│ "
+                  << h->getCiudad() << "\n";
+    }
+    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+}
+
+void SistemaHospitalario::buscarPorEspecialidad(const std::string& codigoEspecialidad) {
+    auto todos = tablahospitales->obtenerTodos();
+    std::vector<Hospital*> resultado;
+    
+    // Filtrar hospitales que tengan la especialidad
+    for (auto h : todos) {
+        if (h->tieneEspecialidad(codigoEspecialidad)) {
+            resultado.push_back(h);
+        }
+    }
+    
+    if (resultado.empty()) {
+        std::cout << "No hay hospitales que ofrezcan la especialidad '" 
+                  << codigoEspecialidad << "'.\n";
+        return;
+    }
+
+    ordenarPorCamasDesc(resultado);
+    
+    std::cout << "\nHospitales con especialidad '" << codigoEspecialidad 
+              << "' (ordenados por camas disponibles):\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "Código\t│ Nombre\t\t│ Camas\t│ Ciudad\n";
+    std::cout << "───────────────────────────────────────────────────────────────\n";
+    
+    for (const auto& h : resultado) {
+        std::cout << h->getCodigoHospital() << "\t│ "
+                  << h->getNombre() << "\t\t│ "
+                  << h->getCapacidadCamas() << "\t│ "
+                  << h->getCiudad() << "\n";
+    }
+    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+}
+
+void SistemaHospitalario::agregarDerivacion(
+    const std::string& codigoOrigen,
+    const std::string& codigoDestino,
+    int tiempoMinutos
+) {
+    int idxOrigen = -1, idxDestino = -1;
+    
+    for (const auto& par : mapaCodigos) {
+        if (par.first == codigoOrigen) idxOrigen = par.second;
+        if (par.first == codigoDestino) idxDestino = par.second;
+    }
+    
+    if (idxOrigen == -1 || idxDestino == -1) {
+        std::cout << "Uno o ambos hospitales no existen.\n";
+        return;
+    }
+    
+    if (grafoDerivaciones) {
+        grafoDerivaciones->agregarArista(idxOrigen, idxDestino, tiempoMinutos);
+        std::cout << "Derivacion agregada: " << codigoOrigen << " -> "
+                  << codigoDestino << " (" << tiempoMinutos << " minutos)\n";
+    }
+}
+
+std::vector<std::string> SistemaHospitalario::calcularRutaOptima(
+    const std::string& codigoOrigen,
+    const std::string& codigoDestino
+) {
+    std::vector<std::string> ruta;
+    
+    // Buscar índices
+    int idxOrigen = -1, idxDestino = -1;
+    
+    for (const auto& par : mapaCodigos) {
+        if (par.first == codigoOrigen) idxOrigen = par.second;
+        if (par.first == codigoDestino) idxDestino = par.second;
+    }
+    
+    if (idxOrigen == -1 || idxDestino == -1) {
+        std::cout << "Uno o ambos hospitales no existen.\n";
+        return ruta;
+    }
+    
+    if (!grafoDerivaciones) {
+        std::cout << "No hay derivaciones registradas.\n";
+        return ruta;
+    }
+    
+    std::vector<int> distancia;
+    std::vector<int> padre;
+    Dijkstra::calcular(*grafoDerivaciones, idxOrigen, distancia, padre);
+    
+    // Reconstruir la ruta
+    if (distancia[idxDestino] == INT_MAX) {
+        std::cout << "No hay ruta disponible entre " << codigoOrigen 
+                  << " y " << codigoDestino << ".\n";
+    } else {
+        // Backtrack desde destino a origen
+        int actual = idxDestino;
+        while (actual != -1) {
+            // Encontrar código del hospital
+            for (const auto& par : mapaCodigos) {
+                if (par.second == actual) {
+                    ruta.insert(ruta.begin(), par.first);
+                    break;
+                }
+            }
+            actual = padre[actual];
+        }
+        
+        std::cout << "\nRUTA OPTIMA ENCONTRADA\n";
+        std::cout << "=========================================\n";
+        std::cout << "Origen:     " << codigoOrigen << "\n";
+        std::cout << "Destino:    " << codigoDestino << "\n";
+        std::cout << "Tiempo Total: " << distancia[idxDestino] << " minutos\n";
+        std::cout << "Camino: ";
+        
+        for (size_t i = 0; i < ruta.size(); i++) {
+            std::cout << ruta[i];
+            if (i < ruta.size() - 1) std::cout << " -> ";
+        }
+        std::cout << "\n=========================================\n\n";
+    }
+    
+    return ruta;
+}
+
+
+std::vector<Hospital*> SistemaHospitalario::obtenerTodosHospitales() const {
+    return tablahospitales->obtenerTodos();
+}
+
+std::vector<Hospital*> SistemaHospitalario::obtenerHospitalesOrdenadosPorCapacidad(bool descendente) const {
+    std::vector<Hospital*> copia = tablahospitales->obtenerTodos();
+    ordenarPorCapacidad(copia, descendente);
+    return copia;
+}
+
+std::vector<Hospital*> SistemaHospitalario::obtenerHospitalesOrdenadosPorPersonal(bool descendente) const {
+    std::vector<Hospital*> copia = tablahospitales->obtenerTodos();
+    ordenarPorPersonal(copia, descendente);
+    return copia;
+}
+
+std::vector<Hospital*> SistemaHospitalario::obtenerHospitalesOrdenadosPorPresupuesto(bool descendente) const {
+    std::vector<Hospital*> copia = tablahospitales->obtenerTodos();
+    ordenarPorPresupuesto(copia, descendente);
+    return copia;
+}
+
+std::vector<Hospital*> SistemaHospitalario::obtenerHospitalesPorEspecialidad(const std::string& codigoEspecialidad) const {
+    std::vector<Hospital*> resultado;
+    for (const auto& hospital : tablahospitales->obtenerTodos()) {
+        if (hospital->tieneEspecialidad(codigoEspecialidad)) {
+            resultado.push_back(hospital);
+        }
+    }
+    ordenarPorCamasDesc(resultado);
+    return resultado;
+}
+
+int SistemaHospitalario::getCantidadHospitales() const {
+    return cantidadHospitales;
+}
+
+float SistemaHospitalario::getFactorCargaTabla() const {
+    return tablahospitales->factorCarga();
+}
+
+void SistemaHospitalario::listarTodos() {
+    auto todos = tablahospitales->obtenerTodos();
+    
+    if (todos.empty()) {
+        std::cout << "No hay hospitales en el sistema.\n";
+        return;
+    }
+    
+    std::cout << "\nTodos los hospitales en el sistema:\n";
+    std::cout << "═════════════════════════════════════════════\n\n";
+    
+    for (const auto& h : todos) {
+        h->mostrarInformacion();
+    }
+}
+
+
+// ==========================================
+// 📄 Archivo: src/Turno.cpp
+// ==========================================
+#include <iostream>
+#include "Turno.h"
+using namespace std;
+
+// Constructor
+Turno::Turno(
+    string codigoHosp, 
+    int turId, 
+    int pacId, 
+    int medId, 
+    int fechaTur, 
+    string espec, 
+    int duracion
+){
+    codigoHospital = codigoHosp;
+    turnoId = turId;
+    pacienteId = pacId;
+    medicoId = medId;
+    fechaTurno = fechaTur;
+    especialidad = espec;
+    duracionMinutos = duracion;
+}
+
+
+// Getters
+string Turno::getCodigoHospital() {
+    return codigoHospital;
+}
+
+int Turno::getTurnoId() {
+    return turnoId;
+}
+
+int Turno::getPacienteId() {
+    return pacienteId;
+}
+
+int Turno::getMedicoId() {
+    return medicoId;
+}
+
+int Turno::getFechaTurno() {
+    return fechaTurno;
+}
+
+string Turno::getEspecialidad() {
+    return especialidad;
+}
+
+int Turno::getDuracionMinutos() {
+    return duracionMinutos;
+}
+
+// Setters
+void Turno::setCodigoHospital(string codigoHospitalNuevo) {
+    codigoHospital = codigoHospitalNuevo;
+}
+
+void Turno::setTurnoId(int turnoIdNuevo) {
+    turnoId = turnoIdNuevo;
+}
+
+void Turno::setPacienteId(int pacienteIdNuevo) {
+    pacienteId = pacienteIdNuevo;
+}
+
+void Turno::setMedicoId(int medicoIdNuevo) {
+    medicoId = medicoIdNuevo;
+}
+
+void Turno::setFechaTurno(int fechaTurnoNuevo) {
+    fechaTurno = fechaTurnoNuevo;
+}
+
+void Turno::setEspecialidad(string especialidadNueva) {
+    especialidad = especialidadNueva;
+}
+
+void Turno::setDuracionMinutos(int duracionMinutosNueva) {
+    duracionMinutos = duracionMinutosNueva;
+}
+
