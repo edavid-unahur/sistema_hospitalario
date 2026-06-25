@@ -49,9 +49,9 @@ Paciente colaPrioridadPacientes::extraerMasPrioritario() {
 }
 
 void colaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
-    int hijoIzq = 2 * posExtraer + 1;
-    int hijoDer = 2 * posExtraer + 2;
-    int aAcomodar = posExtraer;
+    size_t hijoIzq = 2 * posExtraer + 1;
+    size_t hijoDer = 2 * posExtraer + 2;
+    size_t aAcomodar = posExtraer;
 
     if (heap.empty()) {
         cout << "Error: la cola de prioridad está vacía." << endl;
@@ -66,7 +66,7 @@ void colaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
         aAcomodar = hijoDer;
     }
 
-    if (aAcomodar != posExtraer) {
+    if ((int)aAcomodar != posExtraer) {
         Paciente aux = heap[posExtraer];
         heap[posExtraer] = heap[aAcomodar];
         heap[aAcomodar] = aux;
@@ -76,7 +76,7 @@ void colaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
 
 void colaPrioridadPacientes::actualizarPrioridad(int pacienteId, int nuevaPrioridad) {
 
-    for (int i = 0; i < heap.size(); i++) {
+    for (size_t i = 0; i < heap.size(); i++) {
         if (heap[i].getPacienteId() == pacienteId) {
 
             int prioridadAnterior = heap[i].getPrioridad();

@@ -76,14 +76,14 @@ vector<pair<string,int>> GestorPacientesTurnos::getCantPacientesAtendidosPorHosp
     }
 
     while (
-        pos < pacientesPorFechaIngreso.size() &&
+        pos < (int)pacientesPorFechaIngreso.size() &&
         pacientesPorFechaIngreso[pos].getFechaIngreso() <= fechaFin
     ) {
 
         string hospital = pacientesPorFechaIngreso[pos].getCodigoHospital();
         bool encontrado = false;
 
-        for ( int i = 0; i < resultado.size(); i++){
+        for ( size_t i = 0; i < resultado.size(); i++){
             if (resultado[i].first == hospital) {
                 resultado[i].second++;
                 encontrado = true;
@@ -158,7 +158,7 @@ vector<Turno> GestorPacientesTurnos::getTurnosPorDni(int dni) {
     }
 
     while (
-        pos < turnosPorPacienteId.size() &&
+        pos < (int)turnosPorPacienteId.size() &&
         turnosPorPacienteId[pos].getPacienteId() == getPacienteIdPorDni(dni)
     ) {
 
@@ -284,7 +284,7 @@ vector<Turno> GestorPacientesTurnos::getTurnosPorMedicoId(int medicoId) {
     }
 
     while (
-        pos < turnosPorMedicoId.size() &&
+        pos < (int)turnosPorMedicoId.size() &&
         turnosPorMedicoId[pos].getMedicoId() == medicoId
     ) {
 
@@ -361,7 +361,7 @@ vector<Turno> GestorPacientesTurnos::mergeSortTurnosPorMedicoId(vector<Turno>& t
 
 vector<Turno> GestorPacientesTurnos::mergeTurnosPorMedicoId(vector<Turno>& izquierda, vector<Turno>& derecha) {
     vector<Turno> resultado;
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
 
     while (i < izquierda.size() && j < derecha.size()) {
         if (izquierda[i].getMedicoId() < derecha[j].getMedicoId()) {
@@ -404,7 +404,7 @@ vector<Turno> GestorPacientesTurnos::mergeSortTurnosPorFecha(vector<Turno>& turn
 
 vector<Turno> GestorPacientesTurnos::mergeTurnosPorFecha(vector<Turno>& izquierda, vector<Turno>& derecha) {
     vector<Turno> resultado;
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
 
     while (i < izquierda.size() && j < derecha.size()) {
         if (izquierda[i].getFechaTurno() < derecha[j].getFechaTurno()) {
@@ -447,7 +447,7 @@ vector<Turno> GestorPacientesTurnos::mergeSortTurnosPorPacienteId(vector<Turno>&
 
 vector<Turno> GestorPacientesTurnos::mergeTurnosPorPacienteId(vector<Turno>& izquierda, vector<Turno>& derecha) {
     vector<Turno> resultado;
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
 
     while (i < izquierda.size() && j < derecha.size()) {
         if (izquierda[i].getPacienteId() < derecha[j].getPacienteId()) {
@@ -493,7 +493,7 @@ vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorDni(vector<Paciente
 vector<Paciente> GestorPacientesTurnos::mergePacientesPorDni(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
 
     vector<Paciente> resultado;
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
 
     while (i < izquierda.size() && j < derecha.size()) {
         if (izquierda[i].getDni() < derecha[j].getDni()) {
@@ -537,7 +537,7 @@ vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorFechaIngreso(vector
 vector<Paciente> GestorPacientesTurnos::mergePacientesPorFechaIngreso(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
     
     vector<Paciente> resultado;
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
 
     while (i < izquierda.size() && j < derecha.size()) {
         if (izquierda[i].getFechaIngreso() < derecha[j].getFechaIngreso()) {
