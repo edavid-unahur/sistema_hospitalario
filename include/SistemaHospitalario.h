@@ -5,6 +5,8 @@
 #include "Hospital.h"
 #include "estructuras/TablaHash.h"
 #include "estructuras/Grafo.h"
+#include "Diagnostico.h"
+#include "ambulancia.h"
 
 
 class SistemaHospitalario {
@@ -15,6 +17,9 @@ private:
     
     // Mapeo entre código de hospital e índice en el grafo
     std::vector<std::pair<std::string, int>> mapaCodigos;
+    std::vector<Insumo> listaInsumos;
+
+    DiagnosticoAVL arbolDiagnosticos;
     
 public:
     SistemaHospitalario(int capacidadInicial = 11);
@@ -50,7 +55,19 @@ public:
     void agregarEspecialidadAHospital(const std::string& codigoHospital,
                                    Especialidad* especialidad);
 
+
+    void registrarDiagnostico(const std::string& codigo);
+    void eliminarDiagnostico(const std::string& codigo); // ◄ ESTA ES LA QUE FALTA
+    void listarDiagnosticos();
+    void mostrarDiagnosticoMasFrecuente();
+    void mostrarEstadisticasArbol();
+
     int getCantidadHospitales() const;
     float getFactorCargaTabla() const;
     void listarTodos();
+
+    void cargarInsumosPorDefecto();
+    void ejecutarBacktrackingPuro(int capacidad);
+    void ejecutarBranchAndBound(int capacidad);
+    void compararAlgoritmos(int capacidad);
 };

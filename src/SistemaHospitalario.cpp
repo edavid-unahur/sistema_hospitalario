@@ -431,3 +431,132 @@ void SistemaHospitalario::listarTodos() {
         h->mostrarInformacion();
     }
 }
+
+// ── Métodos para el Módulo C: Árbol AVL de Diagnósticos ──
+
+void SistemaHospitalario::registrarDiagnostico(const std::string& codigo) {
+    arbolDiagnosticos.insertarOIncrementar(codigo);
+    std::cout << "🚀 Diagnostico '" << codigo << "' procesado en el arbol AVL.\n";
+}
+
+void SistemaHospitalario::eliminarDiagnostico(const std::string& codigo) {
+    if (arbolDiagnosticos.eliminar(codigo)) {
+        std::cout << "✅ Diagnostico '" << codigo << "' eliminado con exito del arbol AVL.\n";
+    } else {
+        std::cout << "⚠️ El diagnostico '" << codigo << "' no existia en el arbol.\n";
+    }
+}
+
+void SistemaHospitalario::listarDiagnosticos() {
+    if (arbolDiagnosticos.vacio()) {
+        std::cout << "📭 El arbol de diagnosticos esta vacio actualmente.\n";
+        return;
+    }
+    
+    auto lista = arbolDiagnosticos.inOrder();
+    std::cout << "\n┌────────────────────────────────────────┐\n";
+    std::cout << "│     LISTA DE DIAGNOSTICOS (INORDER)    │\n";
+    std::cout << "├────────────────────────────────────────┤\n";
+    for (const auto& par : lista) {
+        std::cout << "  • " << par.first << " ──► Frecuencia: " << par.second << "\n";
+    }
+    std::cout << "└────────────────────────────────────────┘\n";
+}
+
+void SistemaHospitalario::mostrarDiagnosticoMasFrecuente() {
+    try {
+        auto max = arbolDiagnosticos.masFrecuente();
+        std::cout << "\n🔥 El diagnostico mas frecuente es: \"" << max.first 
+                  << "\" con " << max.second << " apariciones.\n";
+    } catch (const std::runtime_error& e) {
+        std::cout << "❌ Error: " << e.what() << "\n";
+    }
+}
+
+void SistemaHospitalario::mostrarEstadisticasArbol() {
+    std::cout << "\n📊 --- ESTADISTICAS DEL ARBOL AVL ---\n";
+    std::cout << "  • Altura actual del arbol: " << arbolDiagnosticos.getAltura() << "\n";
+    if (arbolDiagnosticos.estaDesbalanceado()) {
+        std::cout << "  • Estado de balance: ❌ DESBALANCEADO (Revisar rotaciones)\n";
+    } else {
+        std::cout << "  • Estado de balance:  BALANCEADO CORRECTAMENTE (AVL Activo)\n";
+    }
+    std::cout << "─────────────────────────────────────\n";
+}
+
+// ── Métodos para el Módulo D: Optimización de Insumos (Backtracking) ──
+
+void SistemaHospitalario::cargarInsumosPorDefecto() {
+    listaInsumos.clear();
+    // Insumo(nombre, peso_kg, valor_clinico)
+    listaInsumos.push_back(Insumo("Desfibrilador", 10, 100));
+    listaInsumos.push_back(Insumo("Respirador portatil", 15, 120));
+    listaInsumos.push_back(Insumo("Caja de Traumatologia", 8, 70));
+    listaInsumos.push_back(Insumo("Sueros", 5, 40));
+    listaInsumos.push_back(Insumo("Medicamentos urgencia", 2, 90));
+    listaInsumos.push_back(Insumo("Silla de ruedas", 12, 30));
+    listaInsumos.push_back(Insumo("Tubo de oxigeno", 20, 110));
+    
+    std::cout << "✅ Se han cargado " << listaInsumos.size() << " insumos en el sistema.\n";
+}
+
+void SistemaHospitalario::ejecutarBacktrackingPuro(int capacidad) {
+    if (listaInsumos.empty()) {
+        std::cout << "⚠️ No hay insumos cargados. Ejecute la opcion 1 primero.\n";
+        return;
+    }
+    
+    int valorTotal = 0;
+    long long nodosExplorados = 0;
+    
+    std::vector<int> seleccionados = packBacktracking(listaInsumos, capacidad, valorTotal, false, &nodosExplorados);
+    
+    std::cout << "\n--- RESULTADO BACKTRACKING PURO ---\n";
+    std::cout << "Valor clinico total: " << valorTotal << "\n";
+    std::cout << "Nodos explorados en el arbol: " << nodosExplorados << "\n";
+    std::cout << "Insumos seleccionados:\n";
+    for (int idx : seleccionados) {
+        std::cout << " - " << listaInsumos[idx].nombre << " (Peso: " << listaInsumos[idx].peso 
+                  << "kg, Valor: " << listaInsumos[idx].valor << ")\n";
+    }
+}
+
+void SistemaHospitalario::ejecutarBranchAndBound(int capacidad) {
+    if (listaInsumos.empty()) {
+        std::cout << "⚠️ No hay insumos cargados. Ejecute la opcion 1 primero.\n";
+        return;
+    }
+    
+    int valorTotal = 0;
+    long long nodosExplorados = 0;
+    
+    std::vector<int> seleccionados = packBranchAndBound(listaInsumos, capacidad, valorTotal, false, &nodosExplorados);
+    
+    std::cout << "\n--- RESULTADO BRANCH & BOUND (CON PODA) ---\n";
+    std::cout << "Valor clinico total: " << valorTotal << "\n";
+    std::cout << "Nodos explorados en el arbol: " << nodosExplorados << "\n";
+    std::cout << "Insumos seleccionados:\n";
+    for (int idx : seleccionados) {
+        std::cout << " - " << listaInsumos[idx].nombre << " (Peso: " << listaInsumos[idx].peso 
+                  << "kg, Valor: " << listaInsumos[idx].valor << ")\n";
+    }
+}
+
+void SistemaHospitalario::compararAlgoritmos(int capacidad) {
+    if (listaInsumos.empty()) {
+        std::cout << "⚠️ No hay insumos cargados. Ejecute la opcion 1 primero.\n";
+        return;
+    }
+
+    int v1 = 0, v2 = 0;
+    long long nodosPuro = 0, nodosPoda = 0;
+    
+    packBacktracking(listaInsumos, capacidad, v1, false, &nodosPuro);
+    packBranchAndBound(listaInsumos, capacidad, v2, false, &nodosPoda);
+    
+    std::cout << "\n--- COMPARATIVA DE RENDIMIENTO (Capacidad: " << capacidad << "kg) ---\n";
+    std::cout << "Nodos explorados (BT Puro):     " << nodosPuro << "\n";
+    std::cout << "Nodos explorados (BT con Poda): " << nodosPoda << "\n";
+    std::cout << "Reduccion del espacio de busqueda: " 
+              << (100.0 - (double)nodosPoda / nodosPuro * 100.0) << "%\n";
+}
