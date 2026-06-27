@@ -432,6 +432,30 @@ void SistemaHospitalario::listarTodos() {
     }
 }
 
+std::vector<Hospital> SistemaHospitalario::getHospitalesSobrecargados() {
+    std::vector<Hospital*> hospitales = tablahospitales->obtenerTodos();
+    std::vector<Hospital> sobrecargados;
+
+    std::cout << "Hospitales con sobrecarga:" << std::endl;
+
+    for (int i = 0; i < hospitales.size(); i++) {
+
+        if (hospitales[i]->tieneSobrecarga()) {
+
+            sobrecargados.push_back(*hospitales[i]);
+
+            std::cout << hospitales[i]->getCodigoHospital() << " (" << hospitales[i]->getPorcentajeOcupacion()<< "%)" << std::endl;
+        }
+    }
+
+    if (sobrecargados.empty()) {
+
+        std::cout << "No se detectaron hospitales con sobrecarga." << std::endl;
+    }
+
+    return sobrecargados;
+}
+
 // ── Métodos para el Módulo C: Árbol AVL de Diagnósticos ──
 
 void SistemaHospitalario::registrarDiagnostico(const std::string& codigo) {
@@ -560,3 +584,4 @@ void SistemaHospitalario::compararAlgoritmos(int capacidad) {
     std::cout << "Reduccion del espacio de busqueda: " 
               << (100.0 - (double)nodosPoda / nodosPuro * 100.0) << "%\n";
 }
+

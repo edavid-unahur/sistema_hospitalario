@@ -16,6 +16,7 @@ class Hospital {
         int personalMedico;
         std::string ciudad;
         std::vector<Especialidad*> especialidades;
+        int camasDisponibles;
 
     public:
         Hospital();
@@ -27,6 +28,7 @@ class Hospital {
             float presupuestoAnual, 
             int personalMedico,
             const std::string& ciudad
+            
         );
         //Metodos gettes
         std::string getCodigoHospital() const;
@@ -44,6 +46,9 @@ class Hospital {
         bool tieneCamasDisponibles()const;
         void ocuparCama();
         void liberarCama();
+        float getPorcentajeOcupacion() const;
+        bool tieneSobrecarga() const;
+        
 
 
 };

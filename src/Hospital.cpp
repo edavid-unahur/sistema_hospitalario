@@ -63,13 +63,26 @@
     }
 
     bool Hospital::tieneCamasDisponibles()const{
-        return (capacidadCamas > 0);
+        return (camasDisponibles > 0);
     }
 
     void Hospital::liberarCama() {
-        capacidadCamas++;
+        camasDisponibles++;
     }
 
     void Hospital::ocuparCama() {
-        if (capacidadCamas > 0) capacidadCamas--;
-    }   
+        if (camasDisponibles > 0) camasDisponibles--;
+    }  
+    
+    float Hospital::getPorcentajeOcupacion() const {
+
+        int camasOcupadas = capacidadCamas - camasDisponibles;
+        float porcentaje = (float)camasOcupadas * 100 / capacidadCamas;
+
+        return porcentaje;
+    }
+
+    bool Hospital::tieneSobrecarga() const {
+        return getPorcentajeOcupacion() > 90.0;
+
+    }

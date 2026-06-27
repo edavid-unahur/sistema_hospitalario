@@ -70,4 +70,6 @@ public:
     void ejecutarBacktrackingPuro(int capacidad);
     void ejecutarBranchAndBound(int capacidad);
     void compararAlgoritmos(int capacidad);
+
+    std::vector<Hospital> getHospitalesSobrecargados();
 };
