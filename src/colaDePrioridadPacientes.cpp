@@ -4,8 +4,8 @@ using namespace std;
 #include "colaDePrioridadPacientes.h"
 #include "Paciente.h"
 
-colaPrioridadPacientes::colaPrioridadPacientes() {}
-bool colaPrioridadPacientes::tieneMayorPrioridad(Paciente paciente1, Paciente paciente2) {
+ColaPrioridadPacientes::ColaPrioridadPacientes() {}
+bool ColaPrioridadPacientes::tieneMayorPrioridad(Paciente paciente1, Paciente paciente2) {
     if (paciente1.getPrioridad() < paciente2.getPrioridad()) {
         return true;
     } 
@@ -18,12 +18,12 @@ bool colaPrioridadPacientes::tieneMayorPrioridad(Paciente paciente1, Paciente pa
 
 }
 
-void colaPrioridadPacientes::insertar(Paciente paciente) {
+void ColaPrioridadPacientes::insertar(Paciente paciente) {
     heap.push_back(paciente);
     acomodarInsercion(heap.size() - 1);
 }
 
-void colaPrioridadPacientes::acomodarInsercion(int posInsertar) {
+void ColaPrioridadPacientes::acomodarInsercion(int posInsertar) {
     if (posInsertar == 0) {
         return;
     }
@@ -38,7 +38,7 @@ void colaPrioridadPacientes::acomodarInsercion(int posInsertar) {
     }
 }
 
-Paciente colaPrioridadPacientes::extraerMasPrioritario() {
+Paciente ColaPrioridadPacientes::extraerMasPrioritario() {
     Paciente salida = heap[0];
 
     heap[0] = heap[heap.size() - 1];
@@ -48,7 +48,7 @@ Paciente colaPrioridadPacientes::extraerMasPrioritario() {
 
 }
 
-void colaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
+void ColaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
     size_t hijoIzq = 2 * posExtraer + 1;
     size_t hijoDer = 2 * posExtraer + 2;
     size_t aAcomodar = posExtraer;
@@ -74,7 +74,7 @@ void colaPrioridadPacientes::acomodarExtraccion(int posExtraer) {
     }
 }
 
-void colaPrioridadPacientes::actualizarPrioridad(int pacienteId, int nuevaPrioridad) {
+void ColaPrioridadPacientes::actualizarPrioridad(int pacienteId, int nuevaPrioridad) {
 
     for (size_t i = 0; i < heap.size(); i++) {
         if (heap[i].getPacienteId() == pacienteId) {
