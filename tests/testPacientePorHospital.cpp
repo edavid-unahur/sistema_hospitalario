@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "../src/GestorPacientesTurnos.h"
+#include "GestorPacientesTurnos.h"
 using namespace std;
 
 int main() {

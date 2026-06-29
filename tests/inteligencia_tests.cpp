@@ -3,9 +3,9 @@
 #include <vector>
 #include <random>
 #include <chrono>
-#include "../src/Diagnostico.h"
-#include "../src/Insumo.h"
-#include "../src/ambulancia.h"
+#include "Diagnostico.h"
+#include "Insumo.h"
+#include "ambulancia.h"
 
 int main() {
     // Test AVL frequency counting

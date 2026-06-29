@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
-#include "../src/SistemaHospitalario.h"
-#include "../src/Especialidad.h"
+#include "SistemaHospitalario.h"
+#include "Especialidad.h"
 
 int main() {
     SistemaHospitalario sistema;

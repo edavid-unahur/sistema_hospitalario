@@ -1,5 +1,5 @@
-#include "../src/Hospital.h"
-#include "../src/Especialidad.h"
+#include "Hospital.h"
+#include "Especialidad.h"
 
 int main() {
 

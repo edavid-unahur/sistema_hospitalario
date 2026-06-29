@@ -17,6 +17,7 @@
         , presupuestoAnual(presupuestoAnual)
         , personalMedico(personalMedico)
         , ciudad(ciudad)
+        , camasDisponibles(10)
     {}
 
     Hospital::Hospital() {
