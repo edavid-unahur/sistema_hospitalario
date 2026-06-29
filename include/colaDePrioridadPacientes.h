@@ -5,12 +5,13 @@ using namespace std;
 #include <vector>
 #include "Paciente.h"
 
-class colaPrioridadPacientes {
+class ColaPrioridadPacientes {
     private:
         vector<Paciente> heap;
 
     public:
-        colaPrioridadPacientes();
+        ColaPrioridadPacientes();
+        bool estaVacia();
         void insertar(Paciente paciente);
         Paciente extraerMasPrioritario();
         void actualizarPrioridad(int pacienteId, int nuevaPrioridad);

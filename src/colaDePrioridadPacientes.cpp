@@ -5,6 +5,11 @@ using namespace std;
 #include "Paciente.h"
 
 ColaPrioridadPacientes::ColaPrioridadPacientes() {}
+
+bool ColaPrioridadPacientes::estaVacia(){
+    return heap.empty();
+}
+
 bool ColaPrioridadPacientes::tieneMayorPrioridad(Paciente paciente1, Paciente paciente2) {
     if (paciente1.getPrioridad() < paciente2.getPrioridad()) {
         return true;
@@ -82,10 +87,16 @@ void ColaPrioridadPacientes::actualizarPrioridad(int pacienteId, int nuevaPriori
             int prioridadAnterior = heap[i].getPrioridad();
             heap[i].setPrioridad(nuevaPrioridad);
         
-            if (nuevaPrioridad > prioridadAnterior) {
-            acomodarInsercion(i);
-            } else if (nuevaPrioridad < prioridadAnterior) {
-            acomodarExtraccion(i);
+            if (nuevaPrioridad < prioridadAnterior) {
+                // prioridad mejoró → subir en el heap
+                acomodarInsercion(i);
+            } else if (nuevaPrioridad > prioridadAnterior) {
+                // prioridad empeoró → bajar en el heap
+                acomodarExtraccion(i);
+            } else {
+                // misma prioridad, reacomodamos igual por fechaIngreso
+                acomodarInsercion(i);
+                acomodarExtraccion(i);
             }
             break;
         }

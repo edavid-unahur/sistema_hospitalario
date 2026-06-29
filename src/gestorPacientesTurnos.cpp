@@ -258,18 +258,22 @@ void GestorPacientesTurnos::inicializarPacientesPorDni() {
     pacientesPorDniOrdenados = true;
 }
 
-/* 4. Implementar una cola de prioridad (min-heap) para gestionar la lista de espera de 
-pacientes según su nivel de prioridad y fecha de ingreso. 
-Deben poder realizarse: 
--operaciones de inserción
--extracción del más prioritario  
--actualización de prioridad. 
-Asumo que:
--insercion: insertaa ordenado por prioridad y fecha de ingreso
--extraccion: extrae el primero en la cola y corre el lugar de los siguientes
--actualizacion: buscar paciente por id, actualizar prioridad, reordenar la cola
+//4
+Paciente GestorPacientesTurnos::atenderPacienteMasUrgente() {
+    if (!listaDeEspera.estaVacia()) { // o mejor, crear un método colaPacientes.vacia()
+        return listaDeEspera.extraerMasPrioritario();
+    } else {
+        throw runtime_error("No hay pacientes en la cola de prioridad");
+    }
+}
 
-*/
+void GestorPacientesTurnos::cambiarPrioridadPaciente(int pacienteId, int nuevaPrioridad) {
+    listaDeEspera.actualizarPrioridad(pacienteId, nuevaPrioridad);
+}
+
+void GestorPacientesTurnos::agregarPacienteAListaEspera(Paciente paciente){
+    listaDeEspera.insertar(paciente);
+}
 
 //5
 

@@ -5,6 +5,7 @@ using namespace std;
 #include <vector>
 #include "Paciente.h"
 #include "Turno.h"
+#include "colaDePrioridadPacientes.h"
 
 class GestorPacientesTurnos {
 private:
@@ -16,6 +17,7 @@ private:
     vector<Turno> turnosPorFecha;
     vector<Paciente> pacientesPorFechaIngreso;
 
+    ColaPrioridadPacientes listaDeEspera;
 
     bool turnosPorFechaOrdenados = false;
     bool turnosPorMedicoOrdenados = false;
@@ -43,6 +45,11 @@ public:
     void inicializarTurnosPorPacienteId();
     int getPacienteIdPorDni(int dni);
     void inicializarPacientesPorDni();
+
+    //Lista de espera
+    Paciente atenderPacienteMasUrgente();
+    void cambiarPrioridadPaciente(int pacienteId, int nuevaPrioridad);
+    void agregarPacienteAListaEspera(Paciente paciente);
 
     //Punto 5
     vector<Turno> getTurnosPorMedicoId(int medicoId);
