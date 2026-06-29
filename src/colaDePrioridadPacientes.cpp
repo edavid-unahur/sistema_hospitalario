@@ -6,11 +6,11 @@ using namespace std;
 
 colaPrioridadPacientes::colaPrioridadPacientes() {}
 bool colaPrioridadPacientes::tieneMayorPrioridad(Paciente paciente1, Paciente paciente2) {
-    if (paciente1.getPrioridad() > paciente2.getPrioridad()) {
+    if (paciente1.getPrioridad() < paciente2.getPrioridad()) {
         return true;
     } 
     
-    if (paciente1.getPrioridad() < paciente2.getPrioridad()) {
+    if (paciente1.getPrioridad() > paciente2.getPrioridad()) {
         return false;
     } 
         

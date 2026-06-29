@@ -528,10 +528,10 @@ vector<Paciente> GestorPacientesTurnos::mergeSortPacientesPorFechaIngreso(vector
     vector<Paciente> izquierda(pacientes.begin(), pacientes.begin() + medio);
     vector<Paciente> derecha(pacientes.begin() + medio, pacientes.end());
 
-    izquierda = mergeSortPacientesPorDni(izquierda);
-    derecha = mergeSortPacientesPorDni(derecha);
+    izquierda = mergeSortPacientesPorFechaIngreso(izquierda);
+    derecha = mergeSortPacientesPorFechaIngreso(derecha);
 
-    return mergePacientesPorDni(izquierda, derecha);
+    return mergePacientesPorFechaIngreso(izquierda, derecha);
 }
 
 vector<Paciente> GestorPacientesTurnos::mergePacientesPorFechaIngreso(vector<Paciente>& izquierda, vector<Paciente>& derecha) {
