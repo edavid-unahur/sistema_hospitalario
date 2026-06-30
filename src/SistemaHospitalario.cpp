@@ -175,6 +175,34 @@ bool SistemaHospitalario::eliminarHospital(const std::string& codigoHospital) {
     return resultado;
 }
 
+std::string SistemaHospitalario::obtenerHospitalMasCercano(const std::string& codigoHospital) {
+    int idxOrigen = -1;
+    for (const auto& par : mapaCodigos) {
+        if (par.first == codigoHospital) idxOrigen = par.second;
+    }
+    if (idxOrigen == -1 || !grafoDerivaciones) return "";
+
+    std::vector<int> distancia;
+    std::vector<int> padre;
+    Dijkstra::calcular(*grafoDerivaciones, idxOrigen, distancia, padre);
+
+    int minDist = INT_MAX;
+    std::string codigoCercano = "";
+
+    for (const auto& par : mapaCodigos) {
+        if (par.first != codigoHospital) {
+            if (tablahospitales->buscar(par.first) != nullptr) {
+                int idxDest = par.second;
+                if (distancia[idxDest] < minDist) {
+                    minDist = distancia[idxDest];
+                    codigoCercano = par.first;
+                }
+            }
+        }
+    }
+    return codigoCercano;
+}
+
 void SistemaHospitalario::agregarEspecialidadAHospital(
     const std::string& codigoHospital,
     const std::string& especialidad) {

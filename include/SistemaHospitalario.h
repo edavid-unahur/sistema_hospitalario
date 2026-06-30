@@ -35,6 +35,7 @@ public:
         int presupuestoAnual
     );
     bool eliminarHospital(const std::string& codigoHospital);
+    std::string obtenerHospitalMasCercano(const std::string& codigoHospital);
     void listarPorCapacidad(bool descendente = true);
     void listarPorPersonalMedico(bool descendente = true);
     void listarPorPresupuesto(bool descendente = true);

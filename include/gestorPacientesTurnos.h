@@ -50,6 +50,10 @@ public:
     Paciente atenderPacienteMasUrgente();
     void cambiarPrioridadPaciente(int pacienteId, int nuevaPrioridad);
     void agregarPacienteAListaEspera(Paciente paciente);
+    void cargarPacientesEnCola();
+    void reasignarPacientes(const std::string& codigoOrigen, const std::string& codigoDestino);
+    std::vector<std::string> detectarSobrecargaIngresos(int xIngresos);
+    int fechaADias(int fecha);
 
     //Punto 5
     vector<Turno> getTurnosPorMedicoId(int medicoId);

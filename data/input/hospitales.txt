@@ -1,3 +1,4 @@
+HDEMO HospDemo Hurlingham 10 Pediatria,Cardiologia 5 1000000
 H001 HospH001 SantaFe 447 Pediatria,Oftalmologia,Psiquiatria,Clinica,Urologia 157 14885597
 H002 HospH002 MarDelPlata 477 Dermatologia,Traumatologia,Neurologia 164 18619076
 H003 HospH003 Mendoza 436 Oftalmologia,Psiquiatria 165 18322462

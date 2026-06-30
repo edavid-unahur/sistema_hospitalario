@@ -1,5 +1,6 @@
-#include<ios>
-#include<fstream>
+#include <ios>
+#include <fstream>
+#include <algorithm>
 using namespace std;
 #include "gestorPacientesTurnos.h"
 #include "Paciente.h"
@@ -273,6 +274,76 @@ void GestorPacientesTurnos::cambiarPrioridadPaciente(int pacienteId, int nuevaPr
 
 void GestorPacientesTurnos::agregarPacienteAListaEspera(Paciente paciente){
     listaDeEspera.insertar(paciente);
+}
+
+void GestorPacientesTurnos::cargarPacientesEnCola() {
+    for (auto& p : pacientes) {
+        listaDeEspera.insertar(p);
+    }
+}
+
+void GestorPacientesTurnos::reasignarPacientes(const std::string& codigoOrigen, const std::string& codigoDestino) {
+    int reasignados = 0;
+    for (auto& p : pacientes) {
+        if (p.getCodigoHospital() == codigoOrigen) {
+            p.setCodigoHospital(codigoDestino);
+            reasignados++;
+        }
+    }
+    for (auto& p : pacientesPorDni) {
+        if (p.getCodigoHospital() == codigoOrigen) p.setCodigoHospital(codigoDestino);
+    }
+    for (auto& p : pacientesPorFechaIngreso) {
+        if (p.getCodigoHospital() == codigoOrigen) p.setCodigoHospital(codigoDestino);
+    }
+    cout << "✅ Se reasignaron " << reasignados << " pacientes de " << codigoOrigen 
+         << " a " << codigoDestino << ".\n";
+}
+
+int GestorPacientesTurnos::fechaADias(int fecha) {
+    int anio = fecha / 10000;
+    int mes = (fecha % 10000) / 100;
+    int dia = fecha % 100;
+    int diasMes[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (anio % 4 == 0) diasMes[2] = 29;
+    int total = anio * 365 + anio / 4;
+    for (int i = 1; i < mes; i++) total += diasMes[i];
+    total += dia;
+    return total;
+}
+
+std::vector<std::string> GestorPacientesTurnos::detectarSobrecargaIngresos(int xIngresos) {
+    std::vector<std::string> resultado;
+    std::vector<std::string> codigosHosp;
+    for (auto& p : pacientes) {
+        std::string h = p.getCodigoHospital();
+        if (std::find(codigosHosp.begin(), codigosHosp.end(), h) == codigosHosp.end()) {
+            codigosHosp.push_back(h);
+        }
+    }
+
+    for (const auto& hCode : codigosHosp) {
+        std::vector<int> dias;
+        for (auto& p : pacientes) {
+            if (p.getCodigoHospital() == hCode) {
+                dias.push_back(fechaADias(p.getFechaIngreso()));
+            }
+        }
+        std::sort(dias.begin(), dias.end());
+        bool sobrecargado = false;
+        if ((int)dias.size() > xIngresos) {
+            for (size_t i = 0; i <= dias.size() - (xIngresos + 1); i++) {
+                if (dias[i + xIngresos] - dias[i] <= 7) {
+                    sobrecargado = true;
+                    break;
+                }
+            }
+        }
+        if (sobrecargado) {
+            resultado.push_back(hCode);
+        }
+    }
+    return resultado;
 }
 
 //5
