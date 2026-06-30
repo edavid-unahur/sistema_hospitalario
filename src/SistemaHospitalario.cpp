@@ -2,6 +2,8 @@
 #include "Algoritmos/Dijkstra.h"
 #include <iostream>
 #include <climits>
+#include <fstream>
+#include <sstream>
 
 void ordenarPorCapacidad(std::vector<Hospital*>& hospitales, bool descendente) {
     int n = hospitales.size();
@@ -109,16 +111,22 @@ void SistemaHospitalario::agregarHospital(
     const std::string& nombre,
     const std::string& ciudad,
     int capacidadCamas,
+    const std::vector<std::string>& especialidades,
     int personalMedico,
-    float presupuestoAnual
+    int presupuestoAnual
 ) {
     if (tablahospitales->buscar(codigo) != nullptr) {
         std::cout << "El hospital '" << codigo << "' ya existe.\n";
         return;
     }
 
-    Hospital* nuevoHospital = new Hospital(codigo, nombre, capacidadCamas, 
-        presupuestoAnual, personalMedico, ciudad);
+    Hospital* nuevoHospital = new Hospital(codigo,
+    nombre,
+    ciudad,
+    capacidadCamas,
+    especialidades,
+    personalMedico,
+    presupuestoAnual);
     tablahospitales->insertar(nuevoHospital);
     
     if (!grafoDerivaciones) {
@@ -169,7 +177,7 @@ bool SistemaHospitalario::eliminarHospital(const std::string& codigoHospital) {
 
 void SistemaHospitalario::agregarEspecialidadAHospital(
     const std::string& codigoHospital,
-    Especialidad* especialidad) {
+    const std::string& especialidad) {
 
     Hospital* h = tablahospitales->buscar(codigoHospital);
     if (!h) {
@@ -438,7 +446,7 @@ std::vector<Hospital> SistemaHospitalario::getHospitalesSobrecargados() {
 
     std::cout << "Hospitales con sobrecarga:" << std::endl;
 
-    for (int i = 0; i < hospitales.size(); i++) {
+    for (size_t i = 0; i < hospitales.size(); i++) {
 
         if (hospitales[i]->tieneSobrecarga()) {
 
@@ -585,3 +593,85 @@ void SistemaHospitalario::compararAlgoritmos(int capacidad) {
               << (100.0 - (double)nodosPoda / nodosPuro * 100.0) << "%\n";
 }
 
+void SistemaHospitalario::cargarHospitales(const std::string& ruta) {
+    std::ifstream archivo(ruta);
+    
+    if (!archivo.is_open()) {
+        std::cout << "Error: no se pudo abrir el archivo '" << ruta << "'.\n";
+        return;
+    }
+
+    std::string linea;
+    int cargados = 0;
+
+    while (std::getline(archivo, linea)) {
+        if (linea.empty()) continue;
+
+        std::istringstream ss(linea);
+        std::string campos[7];
+
+        for (int i = 0; i < 7; i++) {
+            ss >> campos[i];
+        }
+
+        if (ss.fail()) {
+            std::cout << "Linea mal formateada, se omite: " << linea << "\n";
+            continue;
+        }
+
+        std::string codigo    = campos[0];
+        std::string nombre    = campos[1];
+        std::string ciudad    = campos[2];
+        int camas             = std::stoi(campos[3]);
+        std::string esps      = campos[4];
+        int personal          = std::stoi(campos[5]);
+        int presupuesto       = std::stoi(campos[6]);  // era float, ahora int
+
+        // Parsear especialidades
+        std::vector<std::string> listaEsp;
+        std::istringstream ssEsp(esps);
+        std::string esp;
+        while (std::getline(ssEsp, esp, ',')) {
+            listaEsp.push_back(esp);
+        }
+
+        agregarHospital(codigo, nombre, ciudad, camas, listaEsp, personal, presupuesto);
+        cargados++;
+    }
+
+    archivo.close();
+    std::cout << cargados << " hospitales cargados desde '" << ruta << "'.\n";
+}
+
+void SistemaHospitalario::cargarDerivaciones(const std::string& ruta) {
+    std::ifstream archivo(ruta);
+
+    if (!archivo.is_open()) {
+        std::cout << "Error: no se pudo abrir el archivo '" << ruta << "'.\n";
+        return;
+    }
+
+    std::string linea;
+    int cargadas = 0;
+
+    while (std::getline(archivo, linea)) {
+        if (linea.empty()) continue;
+
+        std::istringstream ss(linea);
+        std::string origen, destino;
+        int tiempo;
+
+        ss >> origen >> destino >> tiempo;
+
+        if (ss.fail()) {
+            std::cout << "Linea mal formateada, se omite: " << linea << "\n";
+            continue;
+        }
+
+        agregarDerivacion(origen, destino, tiempo);
+        cargadas++;
+    }
+
+    archivo.close();
+    std::cout << cargadas << " derivaciones cargadas desde '" << ruta << "'.\n";
+}

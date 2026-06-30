@@ -3,52 +3,43 @@
 #include <string>
 #include <vector>
 
-
-class Ciudad;
-class Especialidad;
-
 class Hospital {
-    private:
-        std::string codigoHospital;
-        std::string nombre;
-        int capacidadCamas;
-        float presupuestoAnual;
-        int personalMedico;
-        std::string ciudad;
-        std::vector<Especialidad*> especialidades;
-        int camasDisponibles;
+private:
+    std::string codigoHospital;
+    std::string nombre;
+    std::string ciudad;
+    int capacidadCamas;
+    std::vector<std::string> especialidades;
+    int personalMedico;
+    int presupuestoAnual;
+    int camasDisponibles;
 
-    public:
-        Hospital();
+public:
+    Hospital();
+    Hospital(
+        const std::string& codigoHospital, 
+        const std::string& nombre,
+        const std::string& ciudad,
+        int capacidadCamas,
+        const std::vector<std::string>& especialidades,
+        int personalMedico,
+        int presupuestoAnual
+    );
 
-        Hospital(
-            const std::string& codigoHospital, 
-            const std::string& nombre, 
-            int capacidadCamas, 
-            float presupuestoAnual, 
-            int personalMedico,
-            const std::string& ciudad
-            
-        );
-        //Metodos gettes
-        std::string getCodigoHospital() const;
-        std::string getNombre() const;
-        int getCapacidadCamas() const;
-        float getPresupuestoAnual() const;
-        std::string getCiudad() const;
-        int getPersonalMedico() const;
-        const std::vector<Especialidad*>& getEspecialidades() const;
-        
-        //Metodos de logica
-        void mostrarInformacion() const;
-        void agregarEspecialidad(Especialidad* e);
-        bool tieneEspecialidad(const std::string& cod) const;
-        bool tieneCamasDisponibles()const;
-        void ocuparCama();
-        void liberarCama();
-        float getPorcentajeOcupacion() const;
-        bool tieneSobrecarga() const;
-        
+    std::string getCodigoHospital() const;
+    std::string getNombre() const;
+    std::string getCiudad() const;
+    int getCapacidadCamas() const;
+    int getPersonalMedico() const;
+    int getPresupuestoAnual() const;
+    const std::vector<std::string>& getEspecialidades() const;
 
-
+    void mostrarInformacion() const;
+    void agregarEspecialidad(const std::string& esp);
+    bool tieneEspecialidad(const std::string& esp) const;
+    bool tieneCamasDisponibles() const;
+    void ocuparCama();
+    void liberarCama();
+    float getPorcentajeOcupacion() const;
+    bool tieneSobrecarga() const;
 };

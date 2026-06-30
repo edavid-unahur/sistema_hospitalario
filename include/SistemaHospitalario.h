@@ -30,8 +30,9 @@ public:
         const std::string& nombre,
         const std::string& ciudad,
         int capacidadCamas,
+        const std::vector<std::string>& especialidades,
         int personalMedico,
-        float presupuestoAnual
+        int presupuestoAnual
     );
     bool eliminarHospital(const std::string& codigoHospital);
     void listarPorCapacidad(bool descendente = true);
@@ -53,7 +54,7 @@ public:
     std::vector<Hospital*> obtenerHospitalesOrdenadosPorPresupuesto(bool descendente = true) const;
     std::vector<Hospital*> obtenerHospitalesPorEspecialidad(const std::string& codigoEspecialidad) const;
     void agregarEspecialidadAHospital(const std::string& codigoHospital,
-                                   Especialidad* especialidad);
+                                   const std::string& especialidad);
 
 
     void registrarDiagnostico(const std::string& codigo);
@@ -72,4 +73,6 @@ public:
     void compararAlgoritmos(int capacidad);
 
     std::vector<Hospital> getHospitalesSobrecargados();
+    void cargarHospitales(const std::string& ruta);
+    void cargarDerivaciones(const std::string& ruta);
 };
