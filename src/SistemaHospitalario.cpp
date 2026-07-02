@@ -226,17 +226,17 @@ void SistemaHospitalario::listarPorCapacidad(bool descendente) {
     ordenarPorCapacidad(todos, descendente);
     
     std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por CAPACIDAD DE CAMAS:\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
-    std::cout << "Código\t│ Nombre\t\t│ Camas\t│ Ciudad\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "---------------------------------------------------------------\n";
+    std::cout << "Codigo\t| Nombre\t\t| Camas\t| Ciudad\n";
+    std::cout << "---------------------------------------------------------------\n";
     
     for (const auto& h : todos) {
-        std::cout << h->getCodigoHospital() << "\t│ "
-                  << h->getNombre() << "\t\t│ "
-                  << h->getCapacidadCamas() << "\t│ "
+        std::cout << h->getCodigoHospital() << "\t| "
+                  << h->getNombre() << "\t\t| "
+                  << h->getCapacidadCamas() << "\t| "
                   << h->getCiudad() << "\n";
     }
-    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+    std::cout << "---------------------------------------------------------------\n\n";
 }
 
 void SistemaHospitalario::listarPorPersonalMedico(bool descendente) {
@@ -250,18 +250,18 @@ void SistemaHospitalario::listarPorPersonalMedico(bool descendente) {
     // Ordenar por personal médico (algoritmo propio)
     ordenarPorPersonal(todos, descendente);
     
-    std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por PERSONAL MÉDICO:\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
-    std::cout << "Código\t│ Nombre\t\t│ Personal│ Ciudad\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por PERSONAL MEDICO:\n";
+    std::cout << "---------------------------------------------------------------\n";
+    std::cout << "Codigo\t| Nombre\t\t| Personal| Ciudad\n";
+    std::cout << "---------------------------------------------------------------\n";
     
     for (const auto& h : todos) {
-        std::cout << h->getCodigoHospital() << "\t│ "
-                  << h->getNombre() << "\t\t│ "
-                  << h->getPersonalMedico() << "\t│ "
+        std::cout << h->getCodigoHospital() << "\t| "
+                  << h->getNombre() << "\t\t| "
+                  << h->getPersonalMedico() << "\t| "
                   << h->getCiudad() << "\n";
     }
-    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+    std::cout << "---------------------------------------------------------------\n\n";
 }
 
 void SistemaHospitalario::listarPorPresupuesto(bool descendente) {
@@ -276,17 +276,17 @@ void SistemaHospitalario::listarPorPresupuesto(bool descendente) {
     ordenarPorPresupuesto(todos, descendente);
     
     std::cout << "\n" << (descendente ? "DESC" : "ASC") << "ENDENTE - Hospitales ordenados por PRESUPUESTO ANUAL:\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
-    std::cout << "Código\t│ Nombre\t\t│ Presupuesto\t│ Ciudad\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "---------------------------------------------------------------\n";
+    std::cout << "Codigo\t| Nombre\t\t| Presupuesto\t| Ciudad\n";
+    std::cout << "---------------------------------------------------------------\n";
     
     for (const auto& h : todos) {
-        std::cout << h->getCodigoHospital() << "\t│ "
-                  << h->getNombre() << "\t\t│ $"
-                  << h->getPresupuestoAnual() << "\t│ "
+        std::cout << h->getCodigoHospital() << "\t| "
+                  << h->getNombre() << "\t\t| $"
+                  << h->getPresupuestoAnual() << "\t| "
                   << h->getCiudad() << "\n";
     }
-    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+    std::cout << "---------------------------------------------------------------\n\n";
 }
 
 void SistemaHospitalario::buscarPorEspecialidad(const std::string& codigoEspecialidad) {
@@ -310,17 +310,17 @@ void SistemaHospitalario::buscarPorEspecialidad(const std::string& codigoEspecia
     
     std::cout << "\nHospitales con especialidad '" << codigoEspecialidad 
               << "' (ordenados por camas disponibles):\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
-    std::cout << "Código\t│ Nombre\t\t│ Camas\t│ Ciudad\n";
-    std::cout << "───────────────────────────────────────────────────────────────\n";
+    std::cout << "---------------------------------------------------------------\n";
+    std::cout << "Codigo\t| Nombre\t\t| Camas\t| Ciudad\n";
+    std::cout << "---------------------------------------------------------------\n";
     
     for (const auto& h : resultado) {
-        std::cout << h->getCodigoHospital() << "\t│ "
-                  << h->getNombre() << "\t\t│ "
-                  << h->getCapacidadCamas() << "\t│ "
+        std::cout << h->getCodigoHospital() << "\t| "
+                  << h->getNombre() << "\t\t| "
+                  << h->getCapacidadCamas() << "\t| "
                   << h->getCiudad() << "\n";
     }
-    std::cout << "───────────────────────────────────────────────────────────────\n\n";
+    std::cout << "---------------------------------------------------------------\n\n";
 }
 
 void SistemaHospitalario::agregarDerivacion(
@@ -461,7 +461,7 @@ void SistemaHospitalario::listarTodos() {
     }
     
     std::cout << "\nTodos los hospitales en el sistema:\n";
-    std::cout << "═════════════════════════════════════════════\n\n";
+    std::cout << "=============================================\n\n";
     
     for (const auto& h : todos) {
         h->mostrarInformacion();
@@ -496,52 +496,52 @@ std::vector<Hospital> SistemaHospitalario::getHospitalesSobrecargados() {
 
 void SistemaHospitalario::registrarDiagnostico(const std::string& codigo) {
     arbolDiagnosticos.insertarOIncrementar(codigo);
-    std::cout << "🚀 Diagnostico '" << codigo << "' procesado en el arbol AVL.\n";
+    std::cout << "[INFO] Diagnostico '" << codigo << "' procesado en el arbol AVL.\n";
 }
 
 void SistemaHospitalario::eliminarDiagnostico(const std::string& codigo) {
     if (arbolDiagnosticos.eliminar(codigo)) {
-        std::cout << "✅ Diagnostico '" << codigo << "' eliminado con exito del arbol AVL.\n";
+        std::cout << "Diagnostico '" << codigo << "' eliminado con exito del arbol AVL.\n";
     } else {
-        std::cout << "⚠️ El diagnostico '" << codigo << "' no existia en el arbol.\n";
+        std::cout << " El diagnostico '" << codigo << "' no existia en el arbol.\n";
     }
 }
 
 void SistemaHospitalario::listarDiagnosticos() {
     if (arbolDiagnosticos.vacio()) {
-        std::cout << "📭 El arbol de diagnosticos esta vacio actualmente.\n";
+        std::cout << "[INFO] El arbol de diagnosticos esta vacio actualmente.\n";
         return;
     }
     
     auto lista = arbolDiagnosticos.inOrder();
-    std::cout << "\n┌────────────────────────────────────────┐\n";
-    std::cout << "│     LISTA DE DIAGNOSTICOS (INORDER)    │\n";
-    std::cout << "├────────────────────────────────────────┤\n";
+    std::cout << "\n+----------------------------------------+\n";
+    std::cout << "|     LISTA DE DIAGNOSTICOS (INORDER)    |\n";
+    std::cout << "+----------------------------------------+\n";
     for (const auto& par : lista) {
-        std::cout << "  • " << par.first << " ──► Frecuencia: " << par.second << "\n";
+        std::cout << "  - " << par.first << " --> Frecuencia: " << par.second << "\n";
     }
-    std::cout << "└────────────────────────────────────────┘\n";
+    std::cout << "+----------------------------------------+\n";
 }
 
 void SistemaHospitalario::mostrarDiagnosticoMasFrecuente() {
     try {
         auto max = arbolDiagnosticos.masFrecuente();
-        std::cout << "\n🔥 El diagnostico mas frecuente es: \"" << max.first 
+        std::cout << "\n[!] El diagnostico mas frecuente es: \"" << max.first 
                   << "\" con " << max.second << " apariciones.\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "❌ Error: " << e.what() << "\n";
+        std::cout << "[ERROR] Error: " << e.what() << "\n";
     }
 }
 
 void SistemaHospitalario::mostrarEstadisticasArbol() {
-    std::cout << "\n📊 --- ESTADISTICAS DEL ARBOL AVL ---\n";
-    std::cout << "  • Altura actual del arbol: " << arbolDiagnosticos.getAltura() << "\n";
+    std::cout << "\n[STATS] --- ESTADISTICAS DEL ARBOL AVL ---\n";
+    std::cout << "  - Altura actual del arbol: " << arbolDiagnosticos.getAltura() << "\n";
     if (arbolDiagnosticos.estaDesbalanceado()) {
-        std::cout << "  • Estado de balance: ❌ DESBALANCEADO (Revisar rotaciones)\n";
+        std::cout << "  - Estado de balance: [!] DESBALANCEADO (Revisar rotaciones)\n";
     } else {
-        std::cout << "  • Estado de balance:  BALANCEADO CORRECTAMENTE (AVL Activo)\n";
+        std::cout << "  - Estado de balance:  BALANCEADO CORRECTAMENTE (AVL Activo)\n";
     }
-    std::cout << "─────────────────────────────────────\n";
+    std::cout << "-------------------------------------\n";
 }
 
 // ── Métodos para el Módulo D: Optimización de Insumos (Backtracking) ──
@@ -557,12 +557,12 @@ void SistemaHospitalario::cargarInsumosPorDefecto() {
     listaInsumos.push_back(Insumo("Silla de ruedas", 12, 30));
     listaInsumos.push_back(Insumo("Tubo de oxigeno", 20, 110));
     
-    std::cout << "✅ Se han cargado " << listaInsumos.size() << " insumos en el sistema.\n";
+    std::cout << "[OK] Se han cargado " << listaInsumos.size() << " insumos en el sistema.\n";
 }
 
 void SistemaHospitalario::ejecutarBacktrackingPuro(int capacidad) {
     if (listaInsumos.empty()) {
-        std::cout << "⚠️ No hay insumos cargados. Ejecute la opcion 1 primero.\n";
+        std::cout << "[!] No hay insumos cargados. Ejecute la opcion 1 primero.\n";
         return;
     }
     
@@ -583,7 +583,7 @@ void SistemaHospitalario::ejecutarBacktrackingPuro(int capacidad) {
 
 void SistemaHospitalario::ejecutarBranchAndBound(int capacidad) {
     if (listaInsumos.empty()) {
-        std::cout << "⚠️ No hay insumos cargados. Ejecute la opcion 1 primero.\n";
+        std::cout << "[!] No hay insumos cargados. Ejecute la opcion 1 primero.\n";
         return;
     }
     
@@ -604,7 +604,7 @@ void SistemaHospitalario::ejecutarBranchAndBound(int capacidad) {
 
 void SistemaHospitalario::compararAlgoritmos(int capacidad) {
     if (listaInsumos.empty()) {
-        std::cout << "⚠️ No hay insumos cargados. Ejecute la opcion 1 primero.\n";
+        std::cout << "[!] No hay insumos cargados. Ejecute la opcion 1 primero.\n";
         return;
     }
 

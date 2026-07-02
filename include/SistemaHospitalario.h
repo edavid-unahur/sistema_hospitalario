@@ -59,7 +59,7 @@ public:
 
 
     void registrarDiagnostico(const std::string& codigo);
-    void eliminarDiagnostico(const std::string& codigo); // ◄ ESTA ES LA QUE FALTA
+    void eliminarDiagnostico(const std::string& codigo); 
     void listarDiagnosticos();
     void mostrarDiagnosticoMasFrecuente();
     void mostrarEstadisticasArbol();

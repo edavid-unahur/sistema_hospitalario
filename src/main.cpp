@@ -23,7 +23,7 @@ void limpiarPantalla() {
 }
 
 void pausarYContinuar() {
-    cout << "\n🔹 Presione ENTER para continuar...";
+    cout << "\nPresione ENTER para continuar...";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     cin.get();
 }
@@ -67,7 +67,7 @@ void menuHospitales(SistemaHospitalario& sistema, GestorPacientesTurnos& gestor)
 
         if (!(cin >> opcion)) {
             limpiarBuffer();
-            cout << "⚠️ Entrada invalida. Ingrese un numero.\n";
+            cout << "[!] Entrada invalida. Ingrese un numero.\n";
             pausarYContinuar();
             continue;
         }
@@ -77,14 +77,14 @@ void menuHospitales(SistemaHospitalario& sistema, GestorPacientesTurnos& gestor)
 
         switch (opcion) {
             case 1:
-                cout << "▶ [MOSTRAR INFORMACION HOSPITAL]\n\n";
+                cout << "> [MOSTRAR INFORMACION HOSPITAL]\n\n";
                 cout << "Ingrese el codigo de hospital (ej: H001): ";
                 cin >> codigo;
                 cout << "\n";
                 sistema.mostrarHospital(codigo);
                 break;
             case 2:
-                cout << "▶ [AGREGAR NUEVO HOSPITAL]\n\n";
+                cout << "> [AGREGAR NUEVO HOSPITAL]\n\n";
                 cout << "Codigo (ej: HCO): "; cin >> codigo;
                 cout << "Nombre: "; cin >> nombre;
                 cout << "Ciudad: "; cin >> ciudad;
@@ -94,7 +94,7 @@ void menuHospitales(SistemaHospitalario& sistema, GestorPacientesTurnos& gestor)
                 sistema.agregarHospital(codigo, nombre, ciudad, camas, {}, personal, presupuesto);
                 break;
             case 3:
-                cout << "▶ [ELIMINAR HOSPITAL]\n\n";
+                cout << "> [ELIMINAR HOSPITAL]\n\n";
                 cout << "Ingrese el codigo del hospital a eliminar: ";
                 cin >> codigo;
                 cout << "\n";
@@ -102,17 +102,17 @@ void menuHospitales(SistemaHospitalario& sistema, GestorPacientesTurnos& gestor)
                     std::string masCercano = sistema.obtenerHospitalMasCercano(codigo);
                     if (sistema.eliminarHospital(codigo)) {
                         if (!masCercano.empty()) {
-                            cout << "🏥 El hospital mas cercano disponible para reasignar es: " << masCercano << "\n";
+                            cout << "[HOSPITAL] El hospital mas cercano disponible para reasignar es: " << masCercano << "\n";
                             gestor.reasignarPacientes(codigo, masCercano);
                         } else {
-                            cout << "⚠️ No se encontraron otros hospitales para derivar pacientes.\n";
+                            cout << "[!] No se encontraron otros hospitales para derivar pacientes.\n";
                         }
                     }
                 }
                 break;
             case 4: {
                 int criterio = -1;
-                cout << "▶ [LISTAR HOSPITALES POR CRITERIO]\n\n";
+                cout << "> [LISTAR HOSPITALES POR CRITERIO]\n\n";
                 cout << "1. Capacidad de Camas\n";
                 cout << "2. Cantidad de Personal Medico\n";
                 cout << "3. Presupuesto Anual\n";
@@ -121,23 +121,23 @@ void menuHospitales(SistemaHospitalario& sistema, GestorPacientesTurnos& gestor)
                 if (criterio == 1) sistema.listarPorCapacidad(true);
                 else if (criterio == 2) sistema.listarPorPersonalMedico(true);
                 else if (criterio == 3) sistema.listarPorPresupuesto(true);
-                else cout << "⚠️ Criterio invalido.\n";
+                else cout << "[!] Criterio invalido.\n";
                 break;
             }
             case 5:
-                cout << "▶ [CALCULAR RUTA OPTIMA - DIJKSTRA]\n\n";
+                cout << "> [CALCULAR RUTA OPTIMA - DIJKSTRA]\n\n";
                 cout << "Ingrese codigo del hospital Origen (ej: H001): "; cin >> codigo;
                 cout << "Ingrese codigo del hospital Destino (ej: H092): "; cin >> nombre;
                 sistema.calcularRutaOptima(codigo, nombre);
                 break;
             case 6:
-                cout << "▶ [BUSCAR HOSPTIALES POR ESPECIALIDAD]\n\n";
+                cout << "> [BUSCAR HOSPTIALES POR ESPECIALIDAD]\n\n";
                 cout << "Ingrese la especialidad (ej: Cardiologia): ";
                 cin >> esp;
                 sistema.buscarPorEspecialidad(esp);
                 break;
             default:
-                cout << "⚠️ Opcion no valida. Intente nuevamente.\n";
+                cout << "[!] Opcion no valida. Intente nuevamente.\n";
         }
         pausarYContinuar();
     }
@@ -183,7 +183,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
 
         if (!(cin >> opcion)) {
             limpiarBuffer();
-            cout << "⚠️ Entrada invalida. Ingrese un numero.\n";
+            cout << "[!] Entrada invalida. Ingrese un numero.\n";
             pausarYContinuar();
             continue;
         }
@@ -193,7 +193,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
 
         switch (opcion) {
             case 1:
-                cout << "▶ [PACIENTES ATENDIDOS POR RANGO DE FECHAS]\n\n";
+                cout << "> [PACIENTES ATENDIDOS POR RANGO DE FECHAS]\n\n";
                 cout << "Ingrese fecha de inicio (AAAAMMDD, ej: 20250101): "; cin >> fIni;
                 cout << "Ingrese fecha de fin (AAAAMMDD, ej: 20251231):    "; cin >> fFin;
                 {
@@ -204,14 +204,14 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                         cout << "No hay pacientes atendidos en ese rango de fechas.\n";
                     } else {
                         for (auto& par : resultado) {
-                            cout << "Hospital: " << par.first << " ──► Pacientes: " << par.second << "\n";
+                            cout << "Hospital: " << par.first << " --> Pacientes: " << par.second << "\n";
                         }
                     }
                 }
                 break;
             case 2:
                 {
-                    cout << "▶ [DETECTAR SOBRECARGA EN HOSPITALES]\n\n";
+                    cout << "> [DETECTAR SOBRECARGA EN HOSPITALES]\n\n";
                     cout << "1. Ver estado de sobrecarga actual (Ocupacion > 90%)\n";
                     cout << "2. Detectar sobrecarga por ingresos semanales (> X en una semana)\n";
                     cout << "3. Simular sobrecarga en un hospital de prueba\n";
@@ -235,10 +235,10 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                                 for (int i = 0; i < target; i++) {
                                     hTarget->ocuparCama();
                                 }
-                                cout << "✅ Se ocuparon " << target << " camas en el hospital " << hCode 
+                                cout << "[OK] Se ocuparon " << target << " camas en el hospital " << hCode 
                                      << " (ocupacion simulada al: " << hTarget->getPorcentajeOcupacion() << "%).\n";
                             } else {
-                                cout << "⚠️ Hospital no encontrado.\n";
+                                cout << "[!] Hospital no encontrado.\n";
                             }
                         } else if (sobOpc == 2) {
                             int limite;
@@ -250,7 +250,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                                 cout << "No se detectaron hospitales con esta sobrecarga.\n";
                             } else {
                                 for (const auto& code : result) {
-                                    cout << " • Hospital: " << code << " ⚠️ (SOBRECARGADO)\n";
+                                    cout << " - Hospital: " << code << " [!] (SOBRECARGADO)\n";
                                 }
                             }
                         } else {
@@ -262,7 +262,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                 }
                 break;
             case 3:
-                cout << "▶ [BUSCAR TURNOS DE PACIENTE POR DNI]\n\n";
+                cout << "> [BUSCAR TURNOS DE PACIENTE POR DNI]\n\n";
                 cout << "Ingrese DNI del paciente: "; cin >> dni;
                 {
                     gestor.inicializarPacientesPorDni();
@@ -273,7 +273,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                         cout << "No se encontraron turnos para el DNI ingresado.\n";
                     } else {
                         for (auto& t : turnos) {
-                            cout << " • ID Turno: " << t.getTurnoId() 
+                            cout << " - ID Turno: " << t.getTurnoId() 
                                  << " | Especialidad: " << t.getEspecialidad() 
                                  << " | Fecha: " << t.getFechaTurno() 
                                  << " | Medico ID: " << t.getMedicoId() << "\n";
@@ -299,19 +299,19 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                         limpiarPantalla();
                         if (subOpc == 1) {
                             gestor.cargarPacientesEnCola();
-                            cout << "✅ Cola de prioridad inicializada con los pacientes cargados en memoria.\n";
+                            cout << "[OK] Cola de prioridad inicializada con los pacientes cargados en memoria.\n";
                             pausarYContinuar();
                         } else if (subOpc == 2) {
                             try {
                                 Paciente p = gestor.atenderPacienteMasUrgente();
-                                cout << "🏥 Atendiendo paciente mas prioritario:\n";
+                                cout << "[HOSPITAL] Atendiendo paciente mas prioritario:\n";
                                 cout << " - ID Paciente: " << p.getPacienteId() << "\n";
                                 cout << " - DNI:         " << p.getDni() << "\n";
                                 cout << " - Prioridad:   " << p.getPrioridad() << " (1:Critico, 5:Leve)\n";
                                 cout << " - Ingreso:     " << p.getFechaIngreso() << "\n";
                                 cout << " - Diagnostico: " << p.getDiagnostico() << "\n";
                             } catch (const exception& e) {
-                                cout << "⚠️ " << e.what() << "\n";
+                                cout << "[!] " << e.what() << "\n";
                             }
                             pausarYContinuar();
                         } else if (subOpc == 3) {
@@ -319,7 +319,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                             cout << "Ingrese ID del paciente: "; cin >> pacId;
                             cout << "Ingrese nueva prioridad (1-5): "; cin >> nuevaPrio;
                             gestor.cambiarPrioridadPaciente(pacId, nuevaPrio);
-                            cout << "✅ Prioridad del paciente " << pacId << " actualizada en el heap.\n";
+                            cout << "[OK] Prioridad del paciente " << pacId << " actualizada en el heap.\n";
                             pausarYContinuar();
                         } else if (subOpc == 4) {
                             string hCode, diag;
@@ -334,7 +334,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                             cout << "Ingrese Peso (kg): "; cin >> peso;
                             Paciente nuevoP(hCode, pacId, pDni, fIng, diag, prio, peso);
                             gestor.agregarPacienteAListaEspera(nuevoP);
-                            cout << "✅ Paciente agregado exitosamente a la cola de prioridad.\n";
+                            cout << "[OK] Paciente agregado exitosamente a la cola de prioridad.\n";
                             pausarYContinuar();
                         }
                     } else {
@@ -344,7 +344,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                 break;
             }
             case 5:
-                cout << "▶ [LISTAR TURNOS DE MEDICO - MERGESORT]\n\n";
+                cout << "> [LISTAR TURNOS DE MEDICO - MERGESORT]\n\n";
                 cout << "Ingrese ID del Medico: "; cin >> medId;
                 {
                     gestor.inicializarTurnosPorMedico();
@@ -354,7 +354,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                         cout << "No hay turnos registrados para este medico.\n";
                     } else {
                         for (auto& t : turnos) {
-                            cout << " • ID Turno: " << t.getTurnoId() 
+                            cout << " - ID Turno: " << t.getTurnoId() 
                                  << " | Fecha: " << t.getFechaTurno() 
                                  << " | Especialidad: " << t.getEspecialidad() 
                                  << " | Paciente ID: " << t.getPacienteId() << "\n";
@@ -363,7 +363,7 @@ void menuPacientes(GestorPacientesTurnos& gestor, SistemaHospitalario& sistema) 
                 }
                 break;
             default:
-                cout << "⚠️ Opcion no valida. Intente nuevamente.\n";
+                cout << "[!] Opcion no valida. Intente nuevamente.\n";
         }
         if (opcion != 4) pausarYContinuar();
     }
@@ -406,7 +406,7 @@ void menuDiagnosticos(SistemaHospitalario& sistema) {
         
         if (!(cin >> opcion)) {
             limpiarBuffer();
-            cout << "⚠️ Entrada invalida. Ingrese un numero.\n";
+            cout << "[!] Entrada invalida. Ingrese un numero.\n";
             pausarYContinuar();
             continue;
         }
@@ -417,33 +417,33 @@ void menuDiagnosticos(SistemaHospitalario& sistema) {
         switch (opcion) {
             case 1:
             case 2:
-                cout << "▶ [INSERTAR / INCREMENTAR DIAGNOSTICO]\n\n";
+                cout << "> [INSERTAR / INCREMENTAR DIAGNOSTICO]\n\n";
                 cout << "Ingrese el codigo o nombre del diagnostico: ";
                 cin >> codigoDiag;
                 cout << "\n";
                 sistema.registrarDiagnostico(codigoDiag);
                 break;
             case 3:
-                cout << "▶ [LISTADO INORDER DE DIAGNOSTICOS]\n";
+                cout << "> [LISTADO INORDER DE DIAGNOSTICOS]\n";
                 sistema.listarDiagnosticos();
                 break;
             case 4:
-                cout << "▶ [DIAGNOSTICO MAS FRECUENTE]\n";
+                cout << "> [DIAGNOSTICO MAS FRECUENTE]\n";
                 sistema.mostrarDiagnosticoMasFrecuente();
                 break;
             case 5:
-                cout << "▶ [ELIMINAR DIAGNOSTICO]\n\n";
+                cout << "> [ELIMINAR DIAGNOSTICO]\n\n";
                 cout << "Ingrese el codigo del diagnostico a eliminar: ";
                 cin >> codigoDiag;
                 cout << "\n";
                 sistema.eliminarDiagnostico(codigoDiag);
                 break;
             case 6:
-                cout << "▶ [ESTADISTICAS DE LA ESTRUCTURA]\n";
+                cout << "> [ESTADISTICAS DE LA ESTRUCTURA]\n";
                 sistema.mostrarEstadisticasArbol();
                 break;
             default:
-                cout << "⚠️ Opcion no valida. Intente nuevamente.\n";
+                cout << "[!] Opcion no valida. Intente nuevamente.\n";
         }
         pausarYContinuar();
     }
@@ -484,7 +484,7 @@ void menuInsumos(SistemaHospitalario& sistema) {
         
         if (!(cin >> opcion)) {
             limpiarBuffer();
-            cout << "⚠️ Entrada invalida. Ingrese un numero.\n";
+            cout << "[!] Entrada invalida. Ingrese un numero.\n";
             pausarYContinuar();
             continue;
         }
@@ -494,41 +494,41 @@ void menuInsumos(SistemaHospitalario& sistema) {
 
         switch (opcion) {
             case 1:
-                cout << "▶ [CARGANDO INSUMOS]\n\n";
+                cout << "> [CARGANDO INSUMOS]\n\n";
                 sistema.cargarInsumosPorDefecto();
                 break;
             case 2:
-                cout << "▶ [EJECUCCION: BACKTRACKING PURO]\n\n";
+                cout << "> [EJECUCCION: BACKTRACKING PURO]\n\n";
                 cout << "Ingrese la capacidad maxima de la ambulancia (en kg): ";
                 if (cin >> capacidad) {
                     sistema.ejecutarBacktrackingPuro(capacidad);
                 } else {
                     limpiarBuffer();
-                    cout << "⚠️ Capacidad invalida.\n";
+                    cout << "[!] Capacidad invalida.\n";
                 }
                 break;
             case 3:
-                cout << "▶ [EJECUCCION: BRANCH & BOUND (CON PODA)]\n\n";
+                cout << "> [EJECUCCION: BRANCH & BOUND (CON PODA)]\n\n";
                 cout << "Ingrese la capacidad maxima de la ambulancia (en kg): ";
                 if (cin >> capacidad) {
                     sistema.ejecutarBranchAndBound(capacidad);
                 } else {
                     limpiarBuffer();
-                    cout << "⚠️ Capacidad invalida.\n";
+                    cout << "[!] Capacidad invalida.\n";
                 }
                 break;
             case 4:
-                cout << "▶ [ESTUDIO COMPARATIVO DE RENDIMIENTO]\n\n";
+                cout << "> [ESTUDIO COMPARATIVO DE RENDIMIENTO]\n\n";
                 cout << "Ingrese la capacidad maxima para la prueba (en kg): ";
                 if (cin >> capacidad) {
                     sistema.compararAlgoritmos(capacidad);
                 } else {
                     limpiarBuffer();
-                    cout << "⚠️ Capacidad invalida.\n";
+                    cout << "[!] Capacidad invalida.\n";
                 }
                 break;
             default:
-                cout << "⚠️ Opcion no valida. Intente nuevamente.\n";
+                cout << "[!] Opcion no valida. Intente nuevamente.\n";
         }
         pausarYContinuar();
     }
@@ -555,7 +555,7 @@ int main() {
 
         if (!(cin >> opcion)) {
             limpiarBuffer();
-            cout << "⚠️ Entrada invalida. Ingrese un numero.\n";
+            cout << "[!] Entrada invalida. Ingrese un numero.\n";
             pausarYContinuar();
             continue;
         }
@@ -563,7 +563,7 @@ int main() {
         switch (opcion) {
             case 1:
                 limpiarPantalla();
-                cout << "▶ [CARGANDO DATOS GENERALES DESDE ARCHIVOS]\n\n";
+                cout << "> [CARGANDO DATOS GENERALES DESDE ARCHIVOS]\n\n";
                 cout << "Cargando hospitales.txt...\n";
                 sistema.cargarHospitales("data/input/hospitales.txt");
                 cout << "Cargando derivaciones.txt...\n";
@@ -572,7 +572,7 @@ int main() {
                 gestor.cargarPacientes("data/input/pacientes.txt");
                 cout << "Cargando turnos.txt...\n";
                 gestor.cargarTurnos("data/input/turnos.txt");
-                cout << "\n✅ Todos los archivos de entrada se cargaron exitosamente.\n";
+                cout << "\n[OK] Todos los archivos de entrada se cargaron exitosamente.\n";
                 pausarYContinuar();
                 break;
             case 2:
@@ -594,7 +594,7 @@ int main() {
                 cout << "====================================================\n";
                 break;
             default:
-                cout << "⚠️ Opcion no valida. Intente nuevamente.\n";
+                cout << "[!] Opcion no valida. Intente nuevamente.\n";
                 pausarYContinuar();
         }
     }

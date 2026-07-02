@@ -4,6 +4,35 @@
 
 using namespace std;
 
+
+void Dijkstra::calcular(Grafo& grafo, int origen) {
+    int V = grafo.getCantidadVertices();
+    vector<int> distancia;
+    vector<int> padre;
+
+    calcular(grafo, origen, distancia, padre);
+
+    cout << "\nDistancias desde hospital "
+         << origen << ":\n";
+
+    for (int i = 0; i < V; i++) {
+        cout << "Hospital "
+             << i
+             << " -> "
+             << distancia[i]
+             << endl;
+    }
+}
+
+
+
+
+
+
+
+
+    
+
 void Dijkstra::calcular(Grafo& grafo, int origen, 
     vector<int>& distancia, vector<int>& padre) {
     int V = grafo.getCantidadVertices();
@@ -43,21 +72,3 @@ void Dijkstra::calcular(Grafo& grafo, int origen,
     }
 }
 
-void Dijkstra::calcular(Grafo& grafo, int origen) {
-    int V = grafo.getCantidadVertices();
-    vector<int> distancia;
-    vector<int> padre;
-
-    calcular(grafo, origen, distancia, padre);
-
-    cout << "\nDistancias desde hospital "
-         << origen << ":\n";
-
-    for (int i = 0; i < V; i++) {
-        cout << "Hospital "
-             << i
-             << " -> "
-             << distancia[i]
-             << endl;
-    }
-}

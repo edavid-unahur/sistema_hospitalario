@@ -261,7 +261,7 @@ void GestorPacientesTurnos::inicializarPacientesPorDni() {
 
 //4
 Paciente GestorPacientesTurnos::atenderPacienteMasUrgente() {
-    if (!listaDeEspera.estaVacia()) { // o mejor, crear un método colaPacientes.vacia()
+    if (!listaDeEspera.estaVacia()) { 
         return listaDeEspera.extraerMasPrioritario();
     } else {
         throw runtime_error("No hay pacientes en la cola de prioridad");
@@ -296,7 +296,7 @@ void GestorPacientesTurnos::reasignarPacientes(const std::string& codigoOrigen, 
     for (auto& p : pacientesPorFechaIngreso) {
         if (p.getCodigoHospital() == codigoOrigen) p.setCodigoHospital(codigoDestino);
     }
-    cout << "✅ Se reasignaron " << reasignados << " pacientes de " << codigoOrigen 
+    cout << "Se reasignaron " << reasignados << " pacientes de " << codigoOrigen 
          << " a " << codigoDestino << ".\n";
 }
 
